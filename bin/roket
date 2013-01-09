@@ -1,0 +1,105 @@
+#!/usr/bin/env ruby
+
+# -*- mode: shell -*- 
+
+require_relative '../lib/roket'
+
+require 'trollop'
+
+options = Trollop::options do
+  version "roket #{Roket::VERSION} (c) 2013 Martin Rhoads"
+  banner <<END_OF_BANNER
+  welcome to roket
+END_OF_BANNER
+
+  opt('aws_access_key',
+      "aws access key",
+      :type => String,
+      :default => ENV['AWS_ACCESS_KEY']
+      )  
+
+  opt('aws_secret_key',
+      "aws secret key",
+      :type => String,
+      :default => ENV['AWS_SECRET_KEY']
+      )
+
+  opt('chef_validation_key_name',
+      'chef validation key name',
+      :type => String,
+      :default => ENV['CHEF_VALIDATION_KEY_NAME'],
+      )
+
+  opt('chef_validation_key',
+      'chef validation key name',
+      :type => String,
+      :default => ENV['CHEF_VALIDATION_KEY'],
+      )
+
+  opt('chef_role',
+      'chef role of instance to be launched',
+      :type => String,
+      :default => ENV['CHEF_ROLE'],
+      )
+
+  opt('chef_environment',
+      'chef environment of instance to be launched',
+      :type => String,
+      :default => ENV['CHEF_ENVIRONMENT'],
+      )
+
+  opt('key_name',
+      'ssh key to launch instance with',
+      :type => String,
+      :default => ENV['KEY_PAIR'],
+      )
+
+  opt('count',
+      'number of instances to launch',
+      :type => String,
+      :default => ENV['COUNT'],
+      )
+
+  opt('region',
+      'ec2 region to launch in',
+      :type => String,
+      :default => ENV['REGION'],
+      )
+
+  opt('image',
+      'ami to use for launch',
+      :type => String,
+      :default => ENV['AMI'],
+      )
+
+  opt('security_group',
+      'security group to launch instance with',
+      :type => String,
+      :default => ENV['SECURITY_GROUP'],
+      )
+
+  opt('machine_type',
+      'instance type to launch',
+      :type => String,
+      :default => ENV['MACHINE_TYPE'],
+      )
+
+end
+
+required_parameters = [
+                       'aws_access_key',
+                       'aws_secret_key',
+                       'chef_validation_key_name',
+                       'chef_validation_key',
+                       'chef_role',
+                       'chef_environment',
+                       'key_name',
+                      ]
+
+required_parameters.each do |arg|
+  raise ArgumentError, "--#{arg} needs to be specified on the commandline or set \
+by the #{arg.upcase} environment variable" \
+  if options[arg].nil? or ! options[arg]
+end
+
+Roket::Roket.new(options)

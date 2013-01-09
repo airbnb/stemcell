@@ -1,0 +1,128 @@
+#!/bin/bash -ex
+#
+# This script will bootstrap and run chef
+#
+# You need to specify a run_list, environment, and validator key info below
+#
+# Martin Rhoads
+
+
+set -o pipefail
+
+
+# redirect stdout to /var/log/init
+exec > /var/log/init
+
+# redirect stderr to /var/log/init.err
+exec 2> /var/log/init.err
+
+
+##
+## settings 
+##
+
+
+run_list=role[<%= @chef_role %>]
+environment=<%= @chef_environment %>
+validator_name=<%= @chef_validation_key_name %>
+validator_value="<%= @chef_validation_key_value %>"
+
+
+##
+## common function
+##
+
+
+update() {
+  echo updating apt repo
+  apt-get update 1>&2
+}
+
+
+install() {
+  if ! (dpkg -l | awk '{print $2}' | grep -q ^$1$ ) ; then
+    echo installing $1...
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get install -y $1 1>&2
+  fi
+}
+
+
+get_instance_id() {
+  instance_id=`curl --retry 5 --retry-delay 5 169.254.169.254/latest/meta-data/instance-id` 1>&2
+  echo instance_id is $instance_id
+}
+
+
+configure_chef() {
+  echo configuring chef...
+  mkdir -p /etc/chef
+  echo -e  "$validator_value" > /etc/chef/validation.pem
+  cat<<EOF>/etc/chef/client.rb
+log_level        :info
+log_location     STDOUT
+chef_server_url  "https://api.opscode.com/organizations/airbnb"
+validation_client_name "$validator_name"
+node_name "$instance_id"
+EOF
+  echo chef configured
+}
+
+
+install_chef() {
+  if ! which chef-client > /dev/null ; then 
+    echo installing chef via omnibus...
+    curl -L --silent https://www.opscode.com/chef/install.sh | sudo bash 1>&2
+  else 
+    echo chef is already installed
+  fi
+}
+
+
+configure_chef_daemon() {
+  cat<<EOF>/etc/init/chef-client.conf
+description     "chef-client"
+author          "Martin Rhoads"
+start on networking
+script
+chef-client --interval 300 --splay 150  | logger -t chef-client 2>&1
+end script
+respawn
+EOF
+}
+
+
+run_chef() {
+  echo running chef-client...
+  chef-client --environment $environment --override-runlist $run_list 1>&2
+  echo done running chef-client
+}
+
+
+start_chef_daemon() {
+  start chef-client
+}
+
+
+##
+## main
+##
+
+
+echo starting chef bootstrapping...
+update
+install curl
+get_instance_id
+configure_chef
+install_chef
+run_chef
+configure_chef_daemon
+start_chef_daemon
+
+
+##
+## exit
+##
+
+
+echo "ran successfully:)"

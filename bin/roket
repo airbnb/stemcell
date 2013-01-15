@@ -51,7 +51,7 @@ END_OF_BANNER
   opt('key_name',
       'ssh key to launch instance with',
       :type => String,
-      :default => ENV['KEY_PAIR'],
+      :default => ENV['KEY_NAME'],
       )
 
   opt('count',
@@ -98,7 +98,7 @@ required_parameters = [
 
 required_parameters.each do |arg|
   raise ArgumentError, "--#{arg} needs to be specified on the commandline or set \
-by the #{arg.upcase} environment variable" \
+by the #{arg.upcase.gsub('_','-')} environment variable" \
   if options[arg].nil? or ! options[arg]
 end
 

@@ -46,9 +46,14 @@ module Roket
       @instances = launch
       wait
       print_run_info
+      print_config_info
     end
     
     private
+
+    def print_config_info
+      puts "install logs will be in /var/log/init and /var/log/init.err"
+    end
     
     def print_run_info
       puts "here is the info for what's launched:"

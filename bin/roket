@@ -31,9 +31,15 @@ END_OF_BANNER
       )
 
   opt('chef_validation_key',
-      'chef validation key name',
+      'chef validation key path',
       :type => String,
       :default => ENV['CHEF_VALIDATION_KEY'],
+      )
+
+  opt('chef_data_bag_secret',
+      'path to chef data bag encryption secret',
+      :type => String,
+      :default => ENV['CHEF_DATA_BAG_SECRET'],
       )
 
   opt('chef_role',
@@ -98,8 +104,10 @@ required_parameters = [
 
 required_parameters.each do |arg|
   raise ArgumentError, "--#{arg} needs to be specified on the commandline or set \
-by the #{arg.upcase.gsub('_','-')} environment variable" \
-  if options[arg].nil? or ! options[arg]
+by the #{arg.upcase.gsub('_','-')} environment variable" if
+    options[arg].nil? or ! options[arg]
 end
 
-Roket::Roket.new(options)
+roket = Roket::Roket.new(options)
+roket.launch({'count' => options['count']})
+

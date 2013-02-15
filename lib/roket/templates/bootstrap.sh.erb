@@ -26,7 +26,7 @@ run_list=role[<%= @chef_role %>]
 environment=<%= @chef_environment %>
 validator_name=<%= @chef_validation_key_name %>
 validator_value="<%= @chef_validation_key_value %>"
-
+data_bag_secret="<%= @chef_data_bag_secret %>"
 
 ##
 ## common function
@@ -65,6 +65,7 @@ chef_server_url  "https://api.opscode.com/organizations/airbnb"
 validation_client_name "$validator_name"
 node_name "$instance_id"
 EOF
+  echo -e "$data_bag_secret" > /etc/chef/encrypted_data_bag_secret
   echo chef configured
 }
 
@@ -73,6 +74,7 @@ install_chef() {
   if ! which chef-client > /dev/null ; then 
     echo installing chef via omnibus...
     curl -L --silent https://www.opscode.com/chef/install.sh | sudo bash 1>&2
+    curl -L --silent https://www.opscode.com/chef/install.sh | sudo bash -s -- -v 11.2.0  1>&2
   else 
     echo chef is already installed
   fi

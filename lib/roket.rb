@@ -32,7 +32,9 @@ module Roket
       begin
         @chef_validation_key_value = File.read(@chef_validation_key)
       rescue Object => e
-        raise "\ncould not open specified key #{@chef_validation_key}:\n#{e.inspect}#{e.backtrace}"
+        # TODO(mkr): we may want to do something better here
+        @chef_validation_key_value = @chef_validation_key
+        # raise "\ncould not open specified key #{@chef_validation_key}:\n#{e.inspect}#{e.backtrace}"
       end
 
       if opts['chef_data_bag_secret']

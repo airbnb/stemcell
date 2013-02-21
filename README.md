@@ -1,12 +1,12 @@
-# Roket
+# Stemcell
 
-Roket launches instances
+Stemcell launches instances
 
 ## Installation
 
 Add this line to your application's Gemfile:
 
-    gem 'roket'
+    gem 'stemcell'
 
 And then execute:
 
@@ -14,7 +14,7 @@ And then execute:
 
 Or install it yourself as:
 
-    $ gem install roket
+    $ gem install stemcell
 
 ## Usage
 

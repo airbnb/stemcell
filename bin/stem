@@ -2,14 +2,14 @@
 
 # -*- mode: shell -*- 
 
-require_relative '../lib/roket'
+require_relative '../lib/stemcell'
 
 require 'trollop'
 
 options = Trollop::options do
-  version "roket #{Roket::VERSION} (c) 2013 Martin Rhoads"
+  version "stemcell #{Stemcell::VERSION} (c) 2013 Martin Rhoads"
   banner <<END_OF_BANNER
-  welcome to roket
+  welcome to stemcell
 END_OF_BANNER
 
   opt('aws_access_key',
@@ -108,6 +108,6 @@ by the #{arg.upcase.gsub('-','_')} environment variable" if
     options[arg].nil? or ! options[arg]
 end
 
-roket = Roket::Roket.new(options)
-roket.launch({'count' => options['count']})
+stemcell = Stemcell::Stemcell.new(options)
+stemcell.launch({'count' => options['count']})
 

@@ -2,10 +2,10 @@ require 'logger'
 require 'erb'
 require 'aws-sdk'
 
-require_relative "roket/version"
+require_relative "stemcell/version"
 
-module Roket
-  class Roket
+module Stemcell
+  class Stemcell
     def initialize(opts={})
       @log = Logger.new(STDOUT)
       @log.debug "opts are #{opts.inspect}"
@@ -118,7 +118,7 @@ module Roket
     def render_template
       this_file = File.expand_path __FILE__
       base_dir = File.dirname this_file
-      template_file_path = File.join(base_dir,'roket','templates','bootstrap.sh.erb')
+      template_file_path = File.join(base_dir,'stemcell','templates','bootstrap.sh.erb')
       template_file = File.read(template_file_path)
       erb_template = ERB.new(template_file)
       generated_template = erb_template.result(binding)

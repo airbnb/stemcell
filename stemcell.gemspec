@@ -1,14 +1,14 @@
 # -*- encoding: utf-8 -*-
 lib = File.expand_path('../lib', __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-require 'roket/version'
+require 'stemcell/version'
 
 Gem::Specification.new do |gem|
-  gem.name          = "roket"
-  gem.version       = Roket::VERSION
+  gem.name          = "stemcell"
+  gem.version       = Stemcell::VERSION
   gem.authors       = ["Martin Rhoads"]
   gem.email         = ["martin.rhoads@airbnb.com"]
-  gem.description   = %q{roket launches instances}
+  gem.description   = %q{stemcell launches instances}
   gem.summary       = %q{no summary}
   gem.homepage      = ""
 

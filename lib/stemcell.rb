@@ -29,6 +29,22 @@ module Stemcell
       @timeout = 120
       @start_time = Time.new
 
+      @tags = {
+        'Name' => "#{@chef_role}-#{@git_branch}",
+        'Group' => "#{@chef_role}-#{@git_branch}",
+        'created_by' => ENV['USER'],
+        'stemcell' => VERSION,
+      }
+
+      if opts['tags']
+        tags = {}
+        opts['tags'].split(',').each do |tag_set|
+          key, value = tag_set.split('=')
+          tags[key] = value
+        end
+        @tags.merge!(tags)
+      end
+
       begin
         @git_key_contents = File.read(@git_key)
       rescue Object => e
@@ -57,6 +73,7 @@ module Stemcell
       File.open('/tmp/user-data', 'w') {|f| f.write(@user_data) }
       instances = do_launch(opts)
       wait(instances)
+      set_tags(instances)
       print_run_info(instances)
       return instances
     end
@@ -101,13 +118,18 @@ module Stemcell
       }
       options.merge!({:availability_zone => opts['avilibility_zone']}) if opts['availability_zone']
       options.merge!({:count => opts['count']}) if opts['count']
-      puts "creating instance with options:\n#{options}"
       instances = @ec2_region.instances.create(options)
       instances = [instances] unless instances.class == Array
       instances.each do |instance|
         @log.info "launched instance #{instance.instance_id}"
       end
       return instances
+    end
+
+    def set_tags(instances=[])
+      instances.each do |instance|
+        instance.tags.set(@tags)
+      end
     end
 
     def render_template

@@ -90,6 +90,12 @@ END_OF_BANNER
       :default => ENV['MACHINE_TYPE'],
       )
 
+  opt('tags',
+      'tags to apply to image',
+      :type => String,
+      :default => ENV['TAGS'],
+      )
+
 end
 
 required_parameters = [

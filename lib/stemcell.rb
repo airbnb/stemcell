@@ -37,12 +37,10 @@ module Stemcell
       }
 
       if opts['tags']
-        tags = {}
         opts['tags'].split(',').each do |tag_set|
           key, value = tag_set.split('=')
-          tags[key] = value
+          @tags[key] = value
         end
-        @tags.merge!(tags)
       end
 
       begin

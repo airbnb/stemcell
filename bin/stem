@@ -27,25 +27,25 @@ END_OF_BANNER
   opt('region',
       'ec2 region to launch in',
       :type => String,
-      :default => ENV['REGION'],
-      )
-
-  opt('image',
-      'ami to use for launch',
-      :type => String,
-      :default => ENV['AMI'],
-      )
-
-  opt('security_group',
-      'security group to launch instance with',
-      :type => String,
-      :default => ENV['SECURITY_GROUP'],
+      :default => ENV['REGION'] ? ENV['REGION'] : 'us-east-1',
       )
 
   opt('machine_type',
       'instance type to launch',
       :type => String,
-      :default => ENV['MACHINE_TYPE'],
+      :default => ENV['MACHINE_TYPE'] ? ENV['MACHINE_TYPE'] : 'm1.small',
+      )
+
+  opt('image',
+      'ami to use for launch',
+      :type => String,
+      :default => ENV['AMI'] ? ENV['AMI'] : 'ami-d726abbe',
+      )
+
+  opt('security_group',
+      'security group to launch instance with',
+      :type => String,
+      :default => ENV['SECURITY_GROUP'] ? ENV['SECURITY_GROUP'] : 'default',
       )
 
   opt('tags',

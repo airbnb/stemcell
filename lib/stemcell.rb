@@ -11,6 +11,11 @@ module Stemcell
       @log.debug "opts are #{opts.inspect}"
       ['aws_access_key',
        'aws_secret_key',
+       'region',
+       'machine_type',
+       'image',
+       'security_group',
+
        'chef_role',
        'git_branch',
        'git_key',
@@ -21,10 +26,6 @@ module Stemcell
         instance_variable_set("@#{req}",opts[req])
       end
 
-      @security_group = opts['security_group'] ? opts['security_group'] : 'default'
-      @image = opts['image'] ? opts['image'] : 'ami-d726abbe'
-      @machine_type = opts['machine_type'] ? opts['machine_type'] : 'm1.small'
-      @region = opts['region'] ? opts['region'] : 'us-east-1'
       @ec2_url = "ec2.#{@region}.amazonaws.com"
       @timeout = 120
       @start_time = Time.new

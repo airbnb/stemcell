@@ -48,9 +48,7 @@ module Stemcell
       begin
         @git_key_contents = File.read(@git_key)
       rescue Object => e
-        # TODO(mkr): we may want to do something better here
-        @git_key_contents = @chef_validation_key
-        # raise "\ncould not open specified key #{@git_key}:\n#{e.inspect}#{e.backtrace}"
+        raise "\ncould not open specified key #{@git_key}:\n#{e.inspect}#{e.backtrace}"
       end
 
       if opts['chef_data_bag_secret']

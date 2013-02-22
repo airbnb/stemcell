@@ -24,48 +24,6 @@ END_OF_BANNER
       :default => ENV['AWS_SECRET_KEY']
       )
 
-  opt('chef_data_bag_secret',
-      'path to chef data bag encryption secret',
-      :type => String,
-      :default => ENV['CHEF_DATA_BAG_SECRET'],
-      )
-
-  opt('chef_role',
-      'chef role of instance to be launched',
-      :type => String,
-      :default => ENV['CHEF_ROLE'],
-      )
-
-  opt('git_branch',
-      'git branch to run off',
-      :type => String,
-      :default => ENV['GIT_BRANCH'],
-      )
-
-  opt('git_key',
-      'git key to use',
-      :type => String,
-      :default => ENV['GIT_KEY'],
-      )
-
-  opt('git_origin',
-      'git origin to use',
-      :type => String,
-      :default => ENV['GIT_ORIGIN'],
-      )
-
-  opt('key_name',
-      'ssh key to launch instance with',
-      :type => String,
-      :default => ENV['KEY_NAME'],
-      )
-
-  opt('count',
-      'number of instances to launch',
-      :type => String,
-      :default => ENV['COUNT'],
-      )
-
   opt('region',
       'ec2 region to launch in',
       :type => String,
@@ -94,6 +52,48 @@ END_OF_BANNER
       'tags to apply to image',
       :type => String,
       :default => ENV['TAGS'],
+      )
+
+  opt('key_name',
+      'aws ssh key name for the ubuntu user',
+      :type => String,
+      :default => ENV['KEY_NAME'],
+      )
+
+  opt('chef_data_bag_secret',
+      'path to chef data bag encryption secret',
+      :type => String,
+      :default => ENV['CHEF_DATA_BAG_SECRET'],
+      )
+
+  opt('chef_role',
+      'chef role of instance to be launched',
+      :type => String,
+      :default => ENV['CHEF_ROLE'],
+      )
+
+  opt('git_origin',
+      'git origin to use',
+      :type => String,
+      :default => ENV['GIT_ORIGIN'],
+      )
+
+  opt('git_branch',
+      'git branch to run off',
+      :type => String,
+      :default => ENV['GIT_BRANCH'],
+      )
+
+  opt('git_key',
+      'path to the git repo deploy key',
+      :type => String,
+      :default => ENV['GIT_KEY'],
+      )
+
+  opt('count',
+      'number of instances to launch',
+      :type => String,
+      :default => ENV['COUNT'],
       )
 
 end

@@ -120,6 +120,16 @@ by the #{arg.upcase.gsub('-','_')} environment variable" if
     options[arg].nil? or ! options[arg]
 end
 
+# convert tags from string to ruby hash
+tags = {}
+if options['tags']
+  options['tags'].split(',').each do |tag_set|
+    key, value = tag_set.split('=')
+    tags[key] = value
+  end
+end
+options['tags'] = tags
+
 stemcell = Stemcell::Stemcell.new(options)
 stemcell.launch({'count' => options['count']})
 

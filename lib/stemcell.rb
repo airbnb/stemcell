@@ -37,13 +37,7 @@ module Stemcell
         'created_by' => ENV['USER'],
         'stemcell' => VERSION,
       }
-
-      if opts['tags']
-        opts['tags'].split(',').each do |tag_set|
-          key, value = tag_set.split('=')
-          @tags[key] = value
-        end
-      end
+      @tags.merge!(opts['tags']) if opts['tags']
 
       begin
         @git_key_contents = File.read(@git_key)

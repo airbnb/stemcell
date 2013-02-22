@@ -11,6 +11,11 @@ module Stemcell
       @log.debug "opts are #{opts.inspect}"
       ['aws_access_key',
        'aws_secret_key',
+       'region',
+       'machine_type',
+       'image',
+       'security_group',
+
        'chef_role',
        'git_branch',
        'git_key',
@@ -21,10 +26,7 @@ module Stemcell
         instance_variable_set("@#{req}",opts[req])
       end
 
-      @security_group = opts['security_group'] ? opts['security_group'] : 'default'
-      @image = opts['image'] ? opts['image'] : 'ami-d726abbe'
-      @machine_type = opts['machine_type'] ? opts['machine_type'] : 'm1.small'
-      @region = opts['region'] ? opts['region'] : 'us-east-1'
+      @zone = opts.include?('availability_zone') ? opts['availability_zone'] : nil
       @ec2_url = "ec2.#{@region}.amazonaws.com"
       @timeout = 120
       @start_time = Time.new
@@ -35,29 +37,19 @@ module Stemcell
         'created_by' => ENV['USER'],
         'stemcell' => VERSION,
       }
-
-      if opts['tags']
-        tags = {}
-        opts['tags'].split(',').each do |tag_set|
-          key, value = tag_set.split('=')
-          tags[key] = value
-        end
-        @tags.merge!(tags)
-      end
+      @tags.merge!(opts['tags']) if opts['tags']
 
       begin
         @git_key_contents = File.read(@git_key)
       rescue Object => e
-        # TODO(mkr): we may want to do something better here
-        @git_key_contents = @chef_validation_key
-        # raise "\ncould not open specified key #{@git_key}:\n#{e.inspect}#{e.backtrace}"
+        @git_key_contents = @git_key  # assume content is passed in
       end
 
-      if opts['chef_data_bag_secret']
+      if opts.include?('chef_data_bag_secret')
         begin
           @chef_data_bag_secret = File.read(opts['chef_data_bag_secret'])
         rescue Object => e
-          raise "\ncould not open specified secret key file #{opts['chef_data_bag_secret']}:\n#{e.inspect}#{e.backtrace}"
+          @chef_data_bag_secret = opts['chef_data_bag_secret'] # assume secret is passed in
         end
       else
         @chef_data_bag_secret = ''
@@ -91,21 +83,21 @@ module Stemcell
     end
 
     def wait(instances)
-      sleep 3
+      @log.info "Waiting for #{instances.count} instances (#{instances.inspect}):"
+
       while true
+        sleep 5
         if Time.now - @start_time > @timeout
           bail(instances)
           raise TimeoutError, "exceded timeout of #{@timeout}"
         end
-        puts "instances is #{instances.inspect}"
+
         if instances.select{|i| i.status != :running }.empty?
-          @log.info "all instances in running state"
-          return
+          break
         end
-        @log.info "instances not ready yet. sleeping..."
-        sleep 5
-        return wait(instances)
       end
+
+      @log.info "all instances in running state"
     end
 
     def do_launch(opts={})
@@ -116,8 +108,9 @@ module Stemcell
         :instance_type => @machine_type,
         :key_name => @key_name,
       }
-      options.merge!({:availability_zone => opts['avilibility_zone']}) if opts['availability_zone']
-      options.merge!({:count => opts['count']}) if opts['count']
+      options[:availability_zone] = @zone if @zone
+      options[:count] = opts['count'] if opts.include?('count')
+
       instances = @ec2_region.instances.create(options)
       instances = [instances] unless instances.class == Array
       instances.each do |instance|
@@ -145,9 +138,9 @@ module Stemcell
     def bail(instances)
       return if instances.nil?
       instances.each do |instance|
+        log.warn "Terminating instance #{instance.instance_id}"
         instance.delete
       end
     end
-
   end
 end

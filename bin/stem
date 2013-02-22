@@ -48,6 +48,12 @@ END_OF_BANNER
       :default => ENV['SECURITY_GROUP'] ? ENV['SECURITY_GROUP'] : 'default',
       )
 
+  opt('availability-zone',
+      'zone in which to launch instances',
+      :type => String,
+      :default => ENV['AVAILABILITY-ZONE'],
+      )
+
   opt('tags',
       'tags to apply to image',
       :type => String,

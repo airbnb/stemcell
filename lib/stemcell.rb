@@ -26,6 +26,7 @@ module Stemcell
         instance_variable_set("@#{req}",opts[req])
       end
 
+      @zone = opts.include?('availability_zone') ? opts['availability_zone'] : nil
       @ec2_url = "ec2.#{@region}.amazonaws.com"
       @timeout = 120
       @start_time = Time.new
@@ -113,8 +114,9 @@ module Stemcell
         :instance_type => @machine_type,
         :key_name => @key_name,
       }
-      options.merge!({:availability_zone => opts['avilibility_zone']}) if opts['availability_zone']
-      options.merge!({:count => opts['count']}) if opts['count']
+      options[:availability_zone] = @zone if @zone
+      options[:count] = opts['count'] if opts.include?('count')
+
       instances = @ec2_region.instances.create(options)
       instances = [instances] unless instances.class == Array
       instances.each do |instance|

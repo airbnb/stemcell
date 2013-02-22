@@ -88,21 +88,21 @@ module Stemcell
     end
 
     def wait(instances)
-      sleep 3
+      @log.info "Waiting for #{instances.count} instances (#{instances.inspect}):"
+
       while true
+        sleep 5
         if Time.now - @start_time > @timeout
           bail(instances)
           raise TimeoutError, "exceded timeout of #{@timeout}"
         end
-        puts "instances is #{instances.inspect}"
+
         if instances.select{|i| i.status != :running }.empty?
-          @log.info "all instances in running state"
-          return
+          break
         end
-        @log.info "instances not ready yet. sleeping..."
-        sleep 5
-        return wait(instances)
       end
+
+      @log.info "all instances in running state"
     end
 
     def do_launch(opts={})
@@ -142,9 +142,9 @@ module Stemcell
     def bail(instances)
       return if instances.nil?
       instances.each do |instance|
+        log.warn "Terminating instance #{instance.instance_id}"
         instance.delete
       end
     end
-
   end
 end

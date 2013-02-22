@@ -48,14 +48,14 @@ module Stemcell
       begin
         @git_key_contents = File.read(@git_key)
       rescue Object => e
-        raise "\ncould not open specified key #{@git_key}:\n#{e.inspect}#{e.backtrace}"
+        @git_key_contents = @git_key  # assume content is passed in
       end
 
-      if opts['chef_data_bag_secret']
+      if opts.include?('chef_data_bag_secret')
         begin
           @chef_data_bag_secret = File.read(opts['chef_data_bag_secret'])
         rescue Object => e
-          raise "\ncould not open specified secret key file #{opts['chef_data_bag_secret']}:\n#{e.inspect}#{e.backtrace}"
+          @chef_data_bag_secret = opts['chef_data_bag_secret'] # assume secret is passed in
         end
       else
         @chef_data_bag_secret = ''

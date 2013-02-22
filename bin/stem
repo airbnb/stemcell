@@ -67,7 +67,7 @@ END_OF_BANNER
       )
 
   opt('chef_data_bag_secret',
-      'path to chef data bag encryption secret',
+      'path to secret file (or the string containing the secret)',
       :type => String,
       :default => ENV['CHEF_DATA_BAG_SECRET'],
       )
@@ -91,7 +91,7 @@ END_OF_BANNER
       )
 
   opt('git_key',
-      'path to the git repo deploy key',
+      'path to the git repo deploy key (or the string containing the key)',
       :type => String,
       :default => ENV['GIT_KEY'],
       )

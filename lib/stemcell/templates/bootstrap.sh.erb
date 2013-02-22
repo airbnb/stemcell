@@ -2,12 +2,20 @@
 #
 # This script will bootstrap and run chef
 #
-# You need to specify a run_list, environment, and validator key info below
+# You need to specify a role, origin, git_key, branch name, and data
+# bag secret info below
 #
 # Martin Rhoads
 
 
 set -o pipefail
+
+
+# ensure we were called by root
+if [ $UID != 0 ]; then
+  echo "this script needs to be run as root. exiting..."
+  exit 1
+fi
 
 
 # redirect stdout to /var/log/init
@@ -22,11 +30,13 @@ exec 2> /var/log/init.err
 ##
 
 
-run_list=role[<%= @chef_role %>]
-environment=<%= @chef_environment %>
-validator_name=<%= @chef_validation_key_name %>
-validator_value="<%= @chef_validation_key_value %>"
-data_bag_secret="<%= @chef_data_bag_secret %>"
+repo_dir=/etc/chef/src
+role=<%= @chef_role %>
+origin=<%= @git_origin %>
+branch=<%= @git_branch %>
+git_key='<%= @git_key_contents %>'
+data_bag_secret='<%= @chef_data_bag_secret %>'
+
 
 ##
 ## common function
@@ -54,26 +64,9 @@ get_instance_id() {
 }
 
 
-configure_chef() {
-  echo configuring chef...
-  mkdir -p /etc/chef
-  echo -e  "$validator_value" > /etc/chef/validation.pem
-  cat<<EOF>/etc/chef/client.rb
-log_level        :info
-log_location     STDOUT
-chef_server_url  "https://api.opscode.com/organizations/airbnb"
-validation_client_name "$validator_name"
-node_name "$instance_id"
-EOF
-  echo -e "$data_bag_secret" > /etc/chef/encrypted_data_bag_secret
-  echo chef configured
-}
-
-
 install_chef() {
-  if ! which chef-client > /dev/null ; then 
+  if ! which chef-solo > /dev/null ; then 
     echo installing chef via omnibus...
-    curl -L --silent https://www.opscode.com/chef/install.sh | sudo bash 1>&2
     curl -L --silent https://www.opscode.com/chef/install.sh | sudo bash -s -- -v 11.2.0  1>&2
   else 
     echo chef is already installed
@@ -81,13 +74,67 @@ install_chef() {
 }
 
 
+configure_chef() {
+  echo configuring chef...
+  mkdir -p /etc/chef
+  cat<<EOF>/etc/chef/solo.json
+{
+  "run_list": "role[$role]"
+}
+EOF
+
+  cat<<EOF>/etc/chef/solo.rb
+log_level        :info
+log_location     STDOUT
+cookbook_path "$repo_dir/cookbooks"
+role_path "$repo_dir/roles"
+data_bag_path "$repo_dir/data_bags"
+json_attribs '/etc/chef/solo.json'
+EOF
+  echo -e "$data_bag_secret" > /etc/chef/encrypted_data_bag_secret
+  echo chef configured
+}
+
+
+update_repo() {
+  git_wrapper=/etc/chef/git_wrapper
+  local keyfile=/etc/chef/git_key
+  if [ -d $repo_dir ]; then 
+    echo updating source...
+    (cd $repo_dir && GIT_SSH=$git_wrapper git pull && git reset --hard && git clean -fdx)
+  else
+    echo -e "$git_key" > $keyfile
+    chmod 0400 $keyfile
+    echo "ssh -i $keyfile  -o StrictHostKeyChecking=no \$1 \$2" > $git_wrapper
+    chmod 0500 $git_wrapper
+    echo downloading cookbook repo...
+    GIT_SSH=$git_wrapper git clone --branch $branch --depth 1 $origin $repo_dir
+  fi
+  echo done updating code
+}
+
+
+configure_converger() {
+cat<<EOF>/usr/local/bin/converge
+#!/bin/bash -e
+
+cd $repo_dir
+GIT_SSH=$git_wrapper git pull
+git reset --hard
+git clean -fdx
+chef-solo
+EOF
+  chmod 0544 /usr/local/bin/converge
+}
+
+
 configure_chef_daemon() {
-  cat<<EOF>/etc/init/chef-client.conf
-description     "chef-client"
+  cat<<EOF>/etc/init/chef-solo.conf
+description     "chef-solo"
 author          "Martin Rhoads"
 start on networking
 script
-chef-client --interval 300 --splay 150  | logger -t chef-client 2>&1
+chef-solo --interval 600 --splay 600  | logger -t chef-solo 2>&1
 end script
 respawn
 EOF
@@ -95,14 +142,14 @@ EOF
 
 
 run_chef() {
-  echo running chef-client...
-  chef-client --environment $environment --override-runlist $run_list 1>&2
-  echo done running chef-client
+  echo running chef-solo...
+  chef-solo 1>&2
+  echo done running chef-solo
 }
 
 
 start_chef_daemon() {
-  start chef-client
+  start chef-solo
 }
 
 
@@ -114,12 +161,15 @@ start_chef_daemon() {
 echo starting chef bootstrapping...
 update
 install curl
+install git
 get_instance_id
-configure_chef
 install_chef
+configure_chef
+update_repo
+configure_converger
 run_chef
 configure_chef_daemon
-start_chef_daemon
+# start_chef_daemon
 
 
 ##

@@ -11,10 +11,10 @@ module Stemcell
       @log.debug "opts are #{opts.inspect}"
       ['aws_access_key',
        'aws_secret_key',
-       'chef_validation_key_name',
-       'chef_validation_key',
        'chef_role',
-       'chef_environment',
+       'git_branch',
+       'git_key',
+       'git_origin',
        'key_name',
       ].each do |req|
         raise ArgumentError, "missing required param #{req}" unless opts[req]
@@ -30,11 +30,11 @@ module Stemcell
       @start_time = Time.new
 
       begin
-        @chef_validation_key_value = File.read(@chef_validation_key)
+        @git_key_contents = File.read(@git_key)
       rescue Object => e
         # TODO(mkr): we may want to do something better here
-        @chef_validation_key_value = @chef_validation_key
-        # raise "\ncould not open specified key #{@chef_validation_key}:\n#{e.inspect}#{e.backtrace}"
+        @git_key_contents = @chef_validation_key
+        # raise "\ncould not open specified key #{@git_key}:\n#{e.inspect}#{e.backtrace}"
       end
 
       if opts['chef_data_bag_secret']
@@ -50,7 +50,6 @@ module Stemcell
       AWS.config({:access_key_id => @aws_access_key, :secret_access_key => @aws_secret_key})
       @ec2 = AWS::EC2.new(:ec2_endpoint => @ec2_url)
       @ec2_region = @ec2.regions[@region]
-
       @user_data = render_template
     end
 
@@ -59,15 +58,10 @@ module Stemcell
       instances = do_launch(opts)
       wait(instances)
       print_run_info(instances)
-      print_config_info
       return instances
     end
 
     private
-
-    def print_config_info
-      puts "install logs will be in /var/log/init and /var/log/init.err"
-    end
 
     def print_run_info(instances)
       puts "here is the info for what's launched:"
@@ -76,6 +70,7 @@ module Stemcell
         puts "\tpublic ip:   #{instance.public_ip_address}"
         puts
       end
+      puts "install logs will be in /var/log/init and /var/log/init.err"
     end
 
     def wait(instances)

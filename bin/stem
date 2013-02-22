@@ -24,8 +24,50 @@ END_OF_BANNER
       :default => ENV['AWS_SECRET_KEY']
       )
 
+  opt('region',
+      'ec2 region to launch in',
+      :type => String,
+      :default => ENV['REGION'] ? ENV['REGION'] : 'us-east-1',
+      )
+
+  opt('machine_type',
+      'instance type to launch',
+      :type => String,
+      :default => ENV['MACHINE_TYPE'] ? ENV['MACHINE_TYPE'] : 'm1.small',
+      )
+
+  opt('image',
+      'ami to use for launch',
+      :type => String,
+      :default => ENV['AMI'] ? ENV['AMI'] : 'ami-d726abbe',
+      )
+
+  opt('security_group',
+      'security group to launch instance with',
+      :type => String,
+      :default => ENV['SECURITY_GROUP'] ? ENV['SECURITY_GROUP'] : 'default',
+      )
+
+  opt('availability-zone',
+      'zone in which to launch instances',
+      :type => String,
+      :default => ENV['AVAILABILITY-ZONE'],
+      )
+
+  opt('tags',
+      'tags to apply to image',
+      :type => String,
+      :default => ENV['TAGS'],
+      )
+
+  opt('key_name',
+      'aws ssh key name for the ubuntu user',
+      :type => String,
+      :default => ENV['KEY_NAME'],
+      )
+
   opt('chef_data_bag_secret',
-      'path to chef data bag encryption secret',
+      'path to secret file (or the string containing the secret)',
       :type => String,
       :default => ENV['CHEF_DATA_BAG_SECRET'],
       )
@@ -36,6 +78,12 @@ END_OF_BANNER
       :default => ENV['CHEF_ROLE'],
       )
 
+  opt('git_origin',
+      'git origin to use',
+      :type => String,
+      :default => ENV['GIT_ORIGIN'],
+      )
+
   opt('git_branch',
       'git branch to run off',
       :type => String,
@@ -43,57 +91,15 @@ END_OF_BANNER
       )
 
   opt('git_key',
-      'git key to use',
+      'path to the git repo deploy key (or the string containing the key)',
       :type => String,
       :default => ENV['GIT_KEY'],
-      )
-
-  opt('git_origin',
-      'git origin to use',
-      :type => String,
-      :default => ENV['GIT_ORIGIN'],
-      )
-
-  opt('key_name',
-      'ssh key to launch instance with',
-      :type => String,
-      :default => ENV['KEY_NAME'],
       )
 
   opt('count',
       'number of instances to launch',
       :type => String,
       :default => ENV['COUNT'],
-      )
-
-  opt('region',
-      'ec2 region to launch in',
-      :type => String,
-      :default => ENV['REGION'],
-      )
-
-  opt('image',
-      'ami to use for launch',
-      :type => String,
-      :default => ENV['AMI'],
-      )
-
-  opt('security_group',
-      'security group to launch instance with',
-      :type => String,
-      :default => ENV['SECURITY_GROUP'],
-      )
-
-  opt('machine_type',
-      'instance type to launch',
-      :type => String,
-      :default => ENV['MACHINE_TYPE'],
-      )
-
-  opt('tags',
-      'tags to apply to image',
-      :type => String,
-      :default => ENV['TAGS'],
       )
 
 end
@@ -113,6 +119,16 @@ required_parameters.each do |arg|
 by the #{arg.upcase.gsub('-','_')} environment variable" if
     options[arg].nil? or ! options[arg]
 end
+
+# convert tags from string to ruby hash
+tags = {}
+if options['tags']
+  options['tags'].split(',').each do |tag_set|
+    key, value = tag_set.split('=')
+    tags[key] = value
+  end
+end
+options['tags'] = tags
 
 stemcell = Stemcell::Stemcell.new(options)
 stemcell.launch({'count' => options['count']})

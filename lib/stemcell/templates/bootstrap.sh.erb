@@ -26,7 +26,7 @@ exec 2> /var/log/init.err
 
 
 ##
-## settings 
+## settings
 ##
 
 
@@ -65,10 +65,12 @@ get_instance_id() {
 
 
 install_chef() {
-  if ! which chef-solo > /dev/null ; then 
+  if ! which chef-solo > /dev/null ; then
     echo installing chef via omnibus...
     curl -L --silent https://www.opscode.com/chef/install.sh | sudo bash -s -- -v 11.2.0  1>&2
-  else 
+    # TODO(mkr): this is a hack to get chef-solo-search working
+    /opt/chef/embedded/bin/gem install --no-ri --no-rdoc treetop
+  else
     echo chef is already installed
   fi
 }
@@ -78,7 +80,7 @@ update_repo() {
   git_wrapper=/etc/chef/git_wrapper
   local keyfile=/etc/chef/git_key
   mkdir -p $(dirname $repo_dir)
-  if [ -d $repo_dir ]; then 
+  if [ -d $repo_dir ]; then
     echo updating source...
     (cd $repo_dir && GIT_SSH=$git_wrapper git fetch && git reset --hard origin/$branch && git clean -fdx)
   else

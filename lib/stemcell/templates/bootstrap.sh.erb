@@ -30,6 +30,7 @@ exec 2> /var/log/init.err
 ##
 
 
+chef_version=11.4.0
 repo_dir=/etc/chef/src
 role=<%= @chef_role %>
 origin=<%= @git_origin %>
@@ -67,7 +68,7 @@ get_instance_id() {
 install_chef() {
   if ! which chef-solo > /dev/null ; then
     echo installing chef via omnibus...
-    curl -L --silent https://www.opscode.com/chef/install.sh | sudo bash -s -- -v 11.2.0  1>&2
+    curl -L --silent https://www.opscode.com/chef/install.sh | sudo bash -s -- -v $chef_version  1>&2
     # TODO(mkr): this is a hack to get chef-solo-search working
     /opt/chef/embedded/bin/gem install --no-ri --no-rdoc treetop
   else

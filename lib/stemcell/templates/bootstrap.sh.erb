@@ -134,6 +134,7 @@ configure_converger() {
 cat<<EOF>/usr/local/bin/converge
 #!/bin/bash -e
 
+echo doing a hard reset to origin/$branch
 cd $repo_dir
 GIT_SSH=$git_wrapper git fetch
 git reset --hard origin/$branch

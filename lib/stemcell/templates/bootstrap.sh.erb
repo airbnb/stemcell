@@ -104,7 +104,8 @@ configure_chef() {
     "role[$branch]",
     "role[$role]"
   ],
-  "branch": "$branch"
+  "branch": "$branch",
+  "role": "$role"
 }
 EOF
   else
@@ -112,7 +113,8 @@ EOF
     cat<<EOF>/etc/chef/solo.json
 {
   "run_list": "role[$role]",
-  "branch": "$branch"
+  "branch": "$branch",
+  "role": "$role"
 }
 EOF
   fi

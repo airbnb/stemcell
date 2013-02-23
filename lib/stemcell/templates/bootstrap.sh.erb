@@ -74,14 +74,48 @@ install_chef() {
 }
 
 
+update_repo() {
+  git_wrapper=/etc/chef/git_wrapper
+  local keyfile=/etc/chef/git_key
+  mkdir -p $(dirname $repo_dir)
+  if [ -d $repo_dir ]; then 
+    echo updating source...
+    (cd $repo_dir && GIT_SSH=$git_wrapper git fetch && git reset --hard origin/$branch && git clean -fdx)
+  else
+    echo -e "$git_key" > $keyfile
+    chmod 0400 $keyfile
+    echo "ssh -i $keyfile  -o StrictHostKeyChecking=no \$1 \$2" > $git_wrapper
+    chmod 0500 $git_wrapper
+    echo downloading cookbook repo...
+    GIT_SSH=$git_wrapper git clone --branch $branch --depth 1 $origin $repo_dir
+  fi
+  echo done updating code
+}
+
+
 configure_chef() {
   echo configuring chef...
   mkdir -p /etc/chef
-  cat<<EOF>/etc/chef/solo.json
+  if [ -f $repo_dir/roles/${branch}.rb ]; then
+    echo "setting runlist to role[$branch],role[$role]"
+    cat<<EOF>/etc/chef/solo.json
 {
-  "run_list": "role[$role]"
+  "run_list": [
+    "role[$branch]",
+    "role[$role]"
+  ],
+  "branch": "$branch"
 }
 EOF
+  else
+    echo "setting runlist to role[$role]"
+    cat<<EOF>/etc/chef/solo.json
+{
+  "run_list": "role[$role]",
+  "branch": "$branch"
+}
+EOF
+  fi
 
   cat<<EOF>/etc/chef/solo.rb
 log_level        :info
@@ -96,31 +130,13 @@ EOF
 }
 
 
-update_repo() {
-  git_wrapper=/etc/chef/git_wrapper
-  local keyfile=/etc/chef/git_key
-  if [ -d $repo_dir ]; then 
-    echo updating source...
-    (cd $repo_dir && GIT_SSH=$git_wrapper git pull && git reset --hard && git clean -fdx)
-  else
-    echo -e "$git_key" > $keyfile
-    chmod 0400 $keyfile
-    echo "ssh -i $keyfile  -o StrictHostKeyChecking=no \$1 \$2" > $git_wrapper
-    chmod 0500 $git_wrapper
-    echo downloading cookbook repo...
-    GIT_SSH=$git_wrapper git clone --branch $branch --depth 1 $origin $repo_dir
-  fi
-  echo done updating code
-}
-
-
 configure_converger() {
 cat<<EOF>/usr/local/bin/converge
 #!/bin/bash -e
 
 cd $repo_dir
-GIT_SSH=$git_wrapper git pull
-git reset --hard
+GIT_SSH=$git_wrapper git fetch
+git reset --hard origin/$branch
 git clean -fdx
 chef-solo
 EOF
@@ -164,8 +180,8 @@ install curl
 install git
 get_instance_id
 install_chef
-configure_chef
 update_repo
+configure_chef
 configure_converger
 run_chef
 configure_chef_daemon

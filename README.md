@@ -24,15 +24,16 @@ download code.
 
 ## Usage
 
-Include your base config:
+### Include your base config:
 
    $ source .stemcellrc
 
-Simple launch:
+### Simple launch:
 
    $ ./bin/stemcell --chef-role $your_chef_role --git-branch $your_chef_branch
 
-More options:
+### More options:
+    $ foo bar
 
    $ ./bin/stemcell --help
 

@@ -13,9 +13,7 @@ And then execute:
     $ bundle
 
 Or install it yourself as:
-
-    $ gem install stemcell
-
+   $ gem install stemcell.gemspec
 
 ## Configuration
 
@@ -34,7 +32,7 @@ Simple launch:
 
    $ ./bin/stemcell --chef-role $your_chef_role --git-branch $your_chef_branch
 
-Addtional options:
+More options:
 
    $ ./bin/stemcell --help
 

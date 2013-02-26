@@ -95,32 +95,15 @@ update_repo() {
 
 
 configure_chef() {
-  echo configuring chef...
-  mkdir -p /etc/chef
-  if [ -f $repo_dir/roles/${branch}.rb ]; then
-    echo "setting runlist to role[$branch],role[$role]"
-    cat<<EOF>/etc/chef/solo.json
-{
-  "run_list": [
-    "role[$branch]",
-    "role[$role]"
-  ],
-  "branch": "$branch",
-  "role": "$role"
-}
-EOF
-  else
-    echo "setting runlist to role[$role]"
-    cat<<EOF>/etc/chef/solo.json
-{
-  "run_list": "role[$role]",
-  "branch": "$branch",
-  "role": "$role"
-}
-EOF
-  fi
+  echo "saving current branch ($branch) and role ($role)"
+  echo "$branch" > $branchfile
+  chmod 644 $branchfile
 
-  cat<<EOF>/etc/chef/solo.rb
+  echo "$role" > $rolefile
+  chmod 644 $rolefile
+
+  echo "configuring chef solo..."
+  cat<<EOF > ${chef_dir}/solo.rb
 log_level        :info
 log_location     STDOUT
 cookbook_path "$repo_dir/cookbooks"

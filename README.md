@@ -6,14 +6,21 @@ Stemcell launches instances
 
 Add this line to your application's Gemfile:
 
-    gem 'stemcell'
+```bash
+gem 'stemcell'
+```
 
 And then execute:
 
-    $ bundle
+```bash
+$ bundle
+```
 
 Or install it yourself as:
-   $ gem install stemcell.gemspec
+
+```bash
+$ gem install stemcell.gemspec
+```
 
 ## Configuration
 

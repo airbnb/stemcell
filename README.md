@@ -16,8 +16,40 @@ Or install it yourself as:
 
     $ gem install stemcell
 
+
+## Configuration
+
+You will need to edit .stemcellrc and add the specified params. You
+can get most of the options from your .chef/knife.rb but you will need
+to get the new chef deploy key so that instances that you launch can
+download code.
+
 ## Usage
 
+Include your base config:
+
+   $ source .stemcellrc
+
+Simple launch:
+
+   $ ./bin/stemcell --chef-role $your_chef_role --git-branch $your_chef_branch
+
+Addtional options:
+
+   $ ./bin/stemcell --help
+
+This will cause instance(s) to be launched and their ip's and instance
+id to be printed to the screen.
+
+Watching install:
+
+   $ ssh unbutu@$IP 'tail -f /var/log/init*'
+
+
+Terminating:
+
+This still needs to be completed. For now, you can kill using the
+amazon cli tools or the web ui.
 
 ## Contributing
 

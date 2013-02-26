@@ -39,19 +39,24 @@ $ source .stemcellrc
 
 ### Simple launch:
 
-    $ ./bin/stemcell --chef-role $your_chef_role --git-branch $your_chef_branch
+```bash
+$ ./bin/stemcell --chef-role $your_chef_role --git-branch $your_chef_branch
+```
 
 This will cause instance(s) to be launched and their ip's and instance
 id to be printed to the screen.
 
 ### More options:
 
-    $ ./bin/stemcell --help
+```bash
+$ ./bin/stemcell --help
+```
 
 ### Watching install:
 
-    $ ssh unbutu@$IP 'tail -f /var/log/init*'
-
+```bash
+$ ssh unbutu@$IP 'tail -f /var/log/init*'
+```
 
 ### Terminating:
 

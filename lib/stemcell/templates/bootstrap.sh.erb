@@ -76,19 +76,18 @@ install_chef() {
 
 
 update_repo() {
-  git_wrapper=/etc/chef/git_wrapper
-  local keyfile=/etc/chef/git_key
+  echo -e "$git_key" > $keyfile
+  chmod 0400 $keyfile
+
+  echo "ssh -i $keyfile -o StrictHostKeyChecking=no \$1 \$2" > $git_wrapper
+  chmod 0500 $git_wrapper
+
   mkdir -p $(dirname $repo_dir)
-  if [ -d $repo_dir ]; then
-    echo updating source...
-    (cd $repo_dir && GIT_SSH=$git_wrapper git fetch && git reset --hard origin/$branch && git clean -fdx)
-  else
-    echo -e "$git_key" > $keyfile
-    chmod 0400 $keyfile
-    echo "ssh -i $keyfile  -o StrictHostKeyChecking=no \$1 \$2" > $git_wrapper
-    chmod 0500 $git_wrapper
-    echo downloading cookbook repo...
+  if [ ! -d $repo_dir ]; then
+    echo "downloading cookbook repo..."
     GIT_SSH=$git_wrapper git clone --branch $branch --depth 1 $origin $repo_dir
+  else
+    echo "cookbook repo already exists"
   fi
 
   echo "done updating code"

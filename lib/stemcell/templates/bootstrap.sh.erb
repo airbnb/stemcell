@@ -31,7 +31,8 @@ exec 2> /var/log/init.err
 
 
 chef_version=11.4.0
-repo_dir=/etc/chef/src
+chef_dir=/etc/chef
+converge=/usr/local/bin/converge
 role=<%= @chef_role %>
 origin=<%= @git_origin %>
 branch=<%= @git_branch %>
@@ -69,8 +70,6 @@ install_chef() {
   if ! which chef-solo > /dev/null ; then
     echo installing chef via omnibus...
     curl -L --silent https://www.opscode.com/chef/install.sh | sudo bash -s -- -v $chef_version  1>&2
-    # TODO(mkr): this is a hack to get chef-solo-search working
-    /opt/chef/embedded/bin/gem install --no-ri --no-rdoc treetop
   else
     echo chef is already installed
   fi
@@ -78,80 +77,82 @@ install_chef() {
 
 
 update_repo() {
-  git_wrapper=/etc/chef/git_wrapper
-  local keyfile=/etc/chef/git_key
+  echo -e "$git_key" > $keyfile
+  chmod 0400 $keyfile
+
+  echo "ssh -i $keyfile -o StrictHostKeyChecking=no \$1 \$2" > $git_wrapper
+  chmod 0500 $git_wrapper
+
   mkdir -p $(dirname $repo_dir)
-  if [ -d $repo_dir ]; then
-    echo updating source...
-    (cd $repo_dir && GIT_SSH=$git_wrapper git fetch && git reset --hard origin/$branch && git clean -fdx)
-  else
-    echo -e "$git_key" > $keyfile
-    chmod 0400 $keyfile
-    echo "ssh -i $keyfile  -o StrictHostKeyChecking=no \$1 \$2" > $git_wrapper
-    chmod 0500 $git_wrapper
-    echo downloading cookbook repo...
+  if [ ! -d $repo_dir ]; then
+    echo "downloading cookbook repo..."
     GIT_SSH=$git_wrapper git clone --branch $branch --depth 1 $origin $repo_dir
+  else
+    echo "cookbook repo already exists"
   fi
-  echo done updating code
+
+  echo "done updating code"
 }
 
 
 configure_chef() {
-  echo configuring chef...
-  mkdir -p /etc/chef
-  if [ -f $repo_dir/roles/${branch}.rb ]; then
-    echo "setting runlist to role[$branch],role[$role]"
-    cat<<EOF>/etc/chef/solo.json
-{
-  "run_list": [
-    "role[$branch]",
-    "role[$role]"
-  ],
-  "branch": "$branch",
-  "role": "$role"
-}
-EOF
-  else
-    echo "setting runlist to role[$role]"
-    cat<<EOF>/etc/chef/solo.json
-{
-  "run_list": "role[$role]",
-  "branch": "$branch",
-  "role": "$role"
-}
-EOF
-  fi
+  echo "saving current branch ($branch) and role ($role)"
+  echo "$branch" > $branchfile
+  chmod 644 $branchfile
 
-  cat<<EOF>/etc/chef/solo.rb
+  echo "$role" > $rolefile
+  chmod 644 $rolefile
+
+  echo "configuring chef solo..."
+  cat<<EOF > ${chef_dir}/solo.rb
+repo_dir =    "${repo_dir}"
+cookbook_path "#{repo_dir}/cookbooks"
+role_path     "#{repo_dir}/roles"
+data_bag_path "#{repo_dir}/data_bags"
+
 log_level        :info
 log_location     STDOUT
-cookbook_path "$repo_dir/cookbooks"
-role_path "$repo_dir/roles"
-data_bag_path "$repo_dir/data_bags"
-json_attribs '/etc/chef/solo.json'
 EOF
-  echo -e "$data_bag_secret" > /etc/chef/encrypted_data_bag_secret
-  echo chef configured
+
+  echo -e "$data_bag_secret" > ${chef_dir}/encrypted_data_bag_secret
+  echo "chef configured"
 }
 
 
 configure_converger() {
-cat<<EOF>/usr/local/bin/converge
-#!/bin/bash -e
+  cat<<EOF > $converge
+#!/bin/bash -eu
 
-echo doing a hard reset to origin/$branch
-cd $repo_dir
-GIT_SSH=$git_wrapper git fetch
-git reset --hard origin/$branch
+repo="${repo_dir}"
+branch=\`cat ${branchfile}\`
+role=\`cat ${rolefile}\`
+
+cd \${repo}
+
+runlist="role[\${role}]"
+if [ -f "roles/\${branch}.rb" ]
+then
+  runlist+=",role[\${branch}]"
+fi
+
+echo doing a hard reset to origin/\${branch}
+GIT_SSH=${git_wrapper} git fetch
+git reset --hard origin/\${branch}
 git clean -fdx
-chef-solo
+
+json="{\"role\": \"\${role}\", \"branch\": \"\${branch}\"}"
+json_file=\`tempfile\`
+echo \$json > \$json_file
+trap "{ rm -f '\$json_file' ; }" EXIT
+
+echo "running chef-solo with runlist \$runlist and json \$json (in file \$json_file)"
+chef-solo -o "\${runlist}" -j \${json_file}
 EOF
-  chmod 0544 /usr/local/bin/converge
+  chmod 544 $converge
 }
 
-
 configure_chef_daemon() {
-  cat<<EOF>/etc/init/chef-solo.conf
+  cat<<EOF > /etc/init/chef-solo.conf
 description     "chef-solo"
 author          "Martin Rhoads"
 start on networking
@@ -164,11 +165,10 @@ EOF
 
 
 run_chef() {
-  echo running chef-solo...
-  chef-solo 1>&2
-  echo done running chef-solo
+  echo "doing initial chef run..."
+  $converge 1>&2
+  echo "initial chef run complete"
 }
-
 
 start_chef_daemon() {
   start chef-solo
@@ -179,8 +179,15 @@ start_chef_daemon() {
 ## main
 ##
 
+#some derived vars
+repo_dir=${chef_dir}/src
+keyfile=${chef_dir}/git_key
+rolefile=${chef_dir}/role
+branchfile=${chef_dir}/branch
+git_wrapper=${chef_dir}/git_wrapper
 
-echo starting chef bootstrapping...
+echo "starting chef bootstrapping..."
+mkdir -p ${chef_dir}
 update
 install curl
 install git
@@ -190,6 +197,7 @@ update_repo
 configure_chef
 configure_converger
 run_chef
+
 configure_chef_daemon
 # start_chef_daemon
 

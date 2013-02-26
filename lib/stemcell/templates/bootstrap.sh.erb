@@ -138,17 +138,9 @@ EOF
 
 
 configure_converger() {
-cat<<EOF>/usr/local/bin/converge
-#!/bin/bash -e
-
-echo doing a hard reset to origin/$branch
-cd $repo_dir
-GIT_SSH=$git_wrapper git fetch
-git reset --hard origin/$branch
-git clean -fdx
-chef-solo
-EOF
-  chmod 0544 /usr/local/bin/converge
+  converge=${chef_dir}/src/scripts/converge.sh
+  chmod 0544 ${converge}
+  ln -s ${converge} /usr/local/bin/converge
 }
 
 configure_chef_daemon() {

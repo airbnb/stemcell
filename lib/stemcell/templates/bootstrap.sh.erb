@@ -69,8 +69,6 @@ install_chef() {
   if ! which chef-solo > /dev/null ; then
     echo installing chef via omnibus...
     curl -L --silent https://www.opscode.com/chef/install.sh | sudo bash -s -- -v $chef_version  1>&2
-    # TODO(mkr): this is a hack to get chef-solo-search working
-    /opt/chef/embedded/bin/gem install --no-ri --no-rdoc treetop
   else
     echo chef is already installed
   fi

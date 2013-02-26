@@ -132,7 +132,7 @@ cd \${repo}
 runlist="role[\${role}]"
 if [ -f "roles/\${branch}.rb" ]
 then
-  runlist+="role[\${branch}]"
+  runlist+=",role[\${branch}]"
 fi
 
 echo doing a hard reset to origin/\${branch}

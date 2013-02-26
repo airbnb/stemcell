@@ -70,3 +70,4 @@ amazon cli tools or the web ui.
 3. Commit your changes (`git commit -am 'Add some feature'`)
 4. Push to the branch (`git push origin my-new-feature`)
 5. Create new Pull Request
+ 

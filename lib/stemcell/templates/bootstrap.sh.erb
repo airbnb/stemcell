@@ -121,23 +121,22 @@ EOF
 
 configure_converger() {
   cat<<EOF > $converge
-#!/bin/bash
+#!/bin/bash -eu
 
-set -e
-set -u
+repo="${repo_dir}"
+branch=\`cat ${branchfile}\`
+role=\`cat ${rolefile}\`
 
-branch=\`cat /etc/chef/branch\`
-role=\`cat /etc/chef/role\`
+cd \${repo}
 
 runlist="role[\${role}]"
-if [ -f "/etc/chef/src/roles/\${branch}.rb" ]
+if [ -f "roles/\${branch}.rb" ]
 then
   runlist+="role[\${branch}]"
 fi
 
 echo doing a hard reset to origin/\${branch}
-cd /etc/chef/src
-GIT_SSH=/etc/chef/git_wrapper git fetch
+GIT_SSH=${git_wrapper} git fetch
 git reset --hard origin/\${branch}
 git clean -fdx
 

@@ -31,7 +31,7 @@ exec 2> /var/log/init.err
 
 
 chef_version=11.4.0
-repo_dir=/etc/chef/src
+chef_dir=/etc/chef
 role=<%= @chef_role %>
 origin=<%= @git_origin %>
 branch=<%= @git_branch %>
@@ -92,7 +92,8 @@ update_repo() {
     echo downloading cookbook repo...
     GIT_SSH=$git_wrapper git clone --branch $branch --depth 1 $origin $repo_dir
   fi
-  echo done updating code
+
+  echo "done updating code"
 }
 
 
@@ -128,10 +129,11 @@ log_location     STDOUT
 cookbook_path "$repo_dir/cookbooks"
 role_path "$repo_dir/roles"
 data_bag_path "$repo_dir/data_bags"
-json_attribs '/etc/chef/solo.json'
+json_attribs "${jsonfile}"
 EOF
-  echo -e "$data_bag_secret" > /etc/chef/encrypted_data_bag_secret
-  echo chef configured
+
+  echo -e "$data_bag_secret" > ${chef_dir}/encrypted_data_bag_secret
+  echo "chef configured"
 }
 
 
@@ -149,9 +151,8 @@ EOF
   chmod 0544 /usr/local/bin/converge
 }
 
-
 configure_chef_daemon() {
-  cat<<EOF>/etc/init/chef-solo.conf
+  cat<<EOF > /etc/init/chef-solo.conf
 description     "chef-solo"
 author          "Martin Rhoads"
 start on networking
@@ -164,11 +165,10 @@ EOF
 
 
 run_chef() {
-  echo running chef-solo...
-  chef-solo 1>&2
-  echo done running chef-solo
+  echo "doing initial chef run..."
+  /usr/local/bin/converge 1>&2
+  echo "initial chef run complete"
 }
-
 
 start_chef_daemon() {
   start chef-solo
@@ -179,8 +179,16 @@ start_chef_daemon() {
 ## main
 ##
 
+#some derived vars
+repo_dir=${chef_dir}/src
+keyfile=${chef_dir}/git_key
+rolefile=${chef_dir}/role
+branchfile=${chef_dir}/branch
+jsonfile=${chef_dir}/solo.json
+git_wrapper=${chef_dir}/git_wrapper
 
-echo starting chef bootstrapping...
+echo "starting chef bootstrapping..."
+mkdir -p ${chef_dir}
 update
 install curl
 install git
@@ -190,6 +198,7 @@ update_repo
 configure_chef
 configure_converger
 run_chef
+
 configure_chef_daemon
 # start_chef_daemon
 

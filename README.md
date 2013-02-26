@@ -19,7 +19,7 @@ $ bundle
 Or install it yourself as:
 
 ```bash
-$ gem install stemcell.gemspec
+$ gem install stemcell
 ```
 
 ## Configuration

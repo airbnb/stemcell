@@ -32,19 +32,19 @@ download code.
 
     $ ./bin/stemcell --chef-role $your_chef_role --git-branch $your_chef_branch
 
+This will cause instance(s) to be launched and their ip's and instance
+id to be printed to the screen.
+
 ### More options:
 
     $ ./bin/stemcell --help
 
-This will cause instance(s) to be launched and their ip's and instance
-id to be printed to the screen.
+### Watching install:
 
-Watching install:
-
-   $ ssh unbutu@$IP 'tail -f /var/log/init*'
+    $ ssh unbutu@$IP 'tail -f /var/log/init*'
 
 
-Terminating:
+### Terminating:
 
 This still needs to be completed. For now, you can kill using the
 amazon cli tools or the web ui.

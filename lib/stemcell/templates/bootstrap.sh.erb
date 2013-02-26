@@ -32,6 +32,7 @@ exec 2> /var/log/init.err
 
 chef_version=11.4.0
 chef_dir=/etc/chef
+converge=/usr/local/bin/converge
 role=<%= @chef_role %>
 origin=<%= @git_origin %>
 branch=<%= @git_branch %>
@@ -104,12 +105,13 @@ configure_chef() {
 
   echo "configuring chef solo..."
   cat<<EOF > ${chef_dir}/solo.rb
+repo_dir =    "${repo_dir}"
+cookbook_path "#{repo_dir}/cookbooks"
+role_path     "#{repo_dir}/roles"
+data_bag_path "#{repo_dir}/data_bags"
+
 log_level        :info
 log_location     STDOUT
-cookbook_path "$repo_dir/cookbooks"
-role_path "$repo_dir/roles"
-data_bag_path "$repo_dir/data_bags"
-json_attribs "${jsonfile}"
 EOF
 
   echo -e "$data_bag_secret" > ${chef_dir}/encrypted_data_bag_secret
@@ -118,9 +120,36 @@ EOF
 
 
 configure_converger() {
-  converge=${chef_dir}/src/scripts/converge.sh
-  chmod 0544 ${converge}
-  ln -s ${converge} /usr/local/bin/converge
+  cat<<EOF > $converge
+#!/bin/bash
+
+set -e
+set -u
+
+branch=\`cat /etc/chef/branch\`
+role=\`cat /etc/chef/role\`
+
+runlist="role[\${role}]"
+if [ -f "/etc/chef/src/roles/\${branch}.rb" ]
+then
+  runlist+="role[\${branch}]"
+fi
+
+echo doing a hard reset to origin/\${branch}
+cd /etc/chef/src
+GIT_SSH=/etc/chef/git_wrapper git fetch
+git reset --hard origin/\${branch}
+git clean -fdx
+
+json="{\"role\": \"\${role}\", \"branch\": \"\${branch}\"}"
+json_file=\`tempfile\`
+echo \$json > \$json_file
+trap "{ rm -f '\$json_file' ; }" EXIT
+
+echo "running chef-solo with runlist \$runlist and json \$json (in file \$json_file)"
+chef-solo -o "\${runlist}" -j \${json_file}
+EOF
+  chmod 544 $converge
 }
 
 configure_chef_daemon() {
@@ -138,7 +167,7 @@ EOF
 
 run_chef() {
   echo "doing initial chef run..."
-  /usr/local/bin/converge 1>&2
+  $converge 1>&2
   echo "initial chef run complete"
 }
 
@@ -156,7 +185,6 @@ repo_dir=${chef_dir}/src
 keyfile=${chef_dir}/git_key
 rolefile=${chef_dir}/role
 branchfile=${chef_dir}/branch
-jsonfile=${chef_dir}/solo.json
 git_wrapper=${chef_dir}/git_wrapper
 
 echo "starting chef bootstrapping..."

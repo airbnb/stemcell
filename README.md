@@ -26,7 +26,9 @@ download code.
 
 ### Include your base config:
 
-    $ source .stemcellrc
+```bash
+$ source .stemcellrc
+```
 
 ### Simple launch:
 

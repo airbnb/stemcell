@@ -24,7 +24,7 @@ download code.
 
 ## Usage
 
-Include your base config:
+### Include your base config:
 
     $ source .stemcellrc
 
@@ -34,9 +34,7 @@ Include your base config:
 
 ### More options:
 
-    $ foo bar
-
-   $ ./bin/stemcell --help
+    $ ./bin/stemcell --help
 
 This will cause instance(s) to be launched and their ip's and instance
 id to be printed to the screen.

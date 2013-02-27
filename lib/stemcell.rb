@@ -17,6 +17,7 @@ module Stemcell
        'security_group',
 
        'chef_role',
+       'chef_environment',
        'git_branch',
        'git_key',
        'git_origin',

@@ -101,17 +101,36 @@ module Stemcell
       @log.info "all instances in running state"
     end
 
-    def do_launch(opts={})
-      options = {
-        :image_id => @image,
-        :security_groups => @security_group,
-        :user_data => @user_data,
-        :instance_type => @machine_type,
-        :key_name => @key_name,
-      }
-      options[:availability_zone] = @zone if @zone
-      options[:count] = opts['count'] if opts.include?('count')
+    # given a hash of params and a list of options, assemble and
+    # return a hash that merges the currently set instance variables
+    # and the provided params. raise an error if an option will not be set
+    def create_options_hash(params,option_list)
+      hash = {}
+      option_list.each do |option|
+        if params[option.to_s]
+          hash[option] = params[option.to_s]
+        elsif instance_variable_defined?("@#{option.to_s}")
+          hash[option] = instance_variable_get("@#{option.to_s}")
+        else
+          raise ArgumentError, "you need to supply option #{option}"
+        end
+      end
+      return hash
+    end
 
+    def do_launch(opts={})
+      options = create_options_hash(opts,[
+        :image_id,
+        :security_groups,
+        :user_data,
+        :instance_type,
+        :key_name,
+        :count,
+      ])
+
+      options[:availability_zone] = opts['zone'] if opts['zone']
+
+      @log.debug "about to launch instance(s) with options #{options}"
       instances = @ec2_region.instances.create(options)
       instances = [instances] unless instances.class == Array
       instances.each do |instance|

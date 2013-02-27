@@ -145,7 +145,7 @@ GIT_SSH=${git_wrapper} git fetch
 git reset --hard origin/\${branch}
 git clean -fdx
 
-json="{\"role\": \"\${role}\", \"environment\": \"\${env}\", \"branch\": \"\${branch}\"}"
+json="{\"role\": \"\${role}\", \"env\": \"\${env}\", \"branch\": \"\${branch}\"}"
 json_file=\`tempfile\`
 echo \$json > \$json_file
 trap "{ rm -f '\$json_file' ; }" EXIT

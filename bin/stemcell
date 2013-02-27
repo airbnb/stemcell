@@ -56,7 +56,6 @@ END_OF_BANNER
 
   opt('tags',
       'comma-separated list of tags to apply',
-      'tags to apply to instance',
       :type => String,
       :default => ENV['TAGS'],
       )

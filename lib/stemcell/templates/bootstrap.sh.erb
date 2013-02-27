@@ -130,13 +130,14 @@ configure_converger() {
 repo="${repo_dir}"
 branch=\`cat ${branchfile}\`
 role=\`cat ${rolefile}\`
+env=\`cat ${envfile}\`
 
 cd \${repo}
 
 runlist="role[\${role}]"
-if [ -f "roles/\${branch}.rb" ]
+if [ -f "roles/\${env}.rb" ]
 then
-  runlist+=",role[\${branch}]"
+  runlist+=",role[\${env}]"
 fi
 
 echo doing a hard reset to origin/\${branch}
@@ -144,7 +145,7 @@ GIT_SSH=${git_wrapper} git fetch
 git reset --hard origin/\${branch}
 git clean -fdx
 
-json="{\"role\": \"\${role}\", \"branch\": \"\${branch}\"}"
+json="{\"role\": \"\${role}\", \"environment\": \"\${env}\", \"branch\": \"\${branch}\"}"
 json_file=\`tempfile\`
 echo \$json > \$json_file
 trap "{ rm -f '\$json_file' ; }" EXIT

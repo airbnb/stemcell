@@ -146,7 +146,7 @@ echo \$json > \$json_file
 trap "{ rm -f '\$json_file' ; }" EXIT
 
 echo "running chef-solo with runlist \$runlist and json \$json (in file \$json_file)"
-chef-solo -o "\${runlist}" -j \${json_file}
+chef-solo -o "\${runlist}" -j \${json_file} "\$@"
 EOF
   chmod 544 $converge
 }

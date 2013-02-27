@@ -81,7 +81,7 @@ END_OF_BANNER
   opt('chef_environment',
       'chef environment in which this instance will run',
       :type => String,
-      :default => ENV['CHEF_ENVIRONMENT'] ? ENV['CHEF_ENVIRONMENT'] : 'production',
+      :default => ENV['CHEF_ENVIRONMENT'],
       )
 
   opt('git_origin',
@@ -114,6 +114,8 @@ required_parameters = [
                        'aws_access_key',
                        'aws_secret_key',
                        'chef_role',
+                       'chef_environment',
+                       'chef_data_bag_secret',
                        'git_branch',
                        'git_key',
                        'git_origin',
@@ -152,13 +154,15 @@ stemcell = Stemcell::Stemcell.new({
 
 # launch instance(s)
 stemcell.launch({
-  'machine_type'    => options['machine_type'],
-  'image_id'        => options['image_id'],
-  'security_groups' => options['security_groups'],
-  'chef_role'       => options['chef_role'],
-  'git_branch'      => options['git_branch'],
-  'git_key'         => options['git_key'],
-  'git_origin'      => options['git_origin'],
-  'key_name'        => options['key_name'],
-  'count'           => options['count'],
+  'machine_type'         => options['machine_type'],
+  'image_id'             => options['image_id'],
+  'security_groups'      => options['security_groups'],
+  'chef_role'            => options['chef_role'],
+  'chef_environment'     => options['chef_environment'],
+  'chef_data_bag_secret' => options['chef_data_bag_secret'],
+  'git_branch'           => options['git_branch'],
+  'git_key'              => options['git_key'],
+  'git_origin'           => options['git_origin'],
+  'key_name'             => options['key_name'],
+  'count'                => options['count'],
 })

@@ -31,7 +31,7 @@ END_OF_BANNER
       )
 
   opt('machine_type',
-      'instance type to launch',
+      'machine type to launch',
       :type => String,
       :default => ENV['MACHINE_TYPE'] ? ENV['MACHINE_TYPE'] : 'm1.small',
       )
@@ -42,10 +42,10 @@ END_OF_BANNER
       :default => ENV['IMAGE_ID'] ? ENV['IMAGE_ID'] : 'ami-d726abbe',
       )
 
-  opt('security_group',
-      'security group to launch instance with',
+  opt('security_groups',
+      'security groups to launch instance with',
       :type => String,
-      :default => ENV['SECURITY_GROUP'] ? ENV['SECURITY_GROUP'] : 'default',
+      :default => ENV['SECURITY_GROUPS'] ? ENV['SECURITY_GROUPS'] : 'default',
       )
 
   opt('availability-zone',
@@ -127,6 +127,7 @@ by the #{arg.upcase.gsub('-','_')} environment variable" if
     options[arg].nil? or ! options[arg]
 end
 
+
 # convert tags from string to ruby hash
 tags = {}
 if options['tags']
@@ -138,23 +139,27 @@ end
 options['tags'] = tags
 
 
+# convert security_groups from comma seperated string to ruby array
+options['security_groups'] = options['security_groups'].split(',')
+
+
 # create stemcell object
 stemcell = Stemcell::Stemcell.new({
-  'aws_access_key' => opts['aws_access_key'],
-  'aws_secret_key' => opts['aws_secret_key'],
-  'region'         => opts['region'],
+  'aws_access_key' => options['aws_access_key'],
+  'aws_secret_key' => options['aws_secret_key'],
+  'region'         => options['region'],
 })
 
 
 # launch instance(s)
 stemcell.launch({
-  'machine_type'   => opts['machine_type'],
-  'image_id'       => opts['image_id'],
-  'security_group' => opts['security_group'],
-  'chef_role'      => opts['chef_role'],
-  'git_branch'     => opts['git_branch'],
-  'git_key'        => opts['git_key'],
-  'git_origin'     => opts['git_origin'],
-  'key_name'       => opts['key_name'],
-  'count'          => opts['count'],
+  'machine_type'    => options['machine_type'],
+  'image_id'        => options['image_id'],
+  'security_groups' => options['security_groups'],
+  'chef_role'       => options['chef_role'],
+  'git_branch'      => options['git_branch'],
+  'git_key'         => options['git_key'],
+  'git_origin'      => options['git_origin'],
+  'key_name'        => options['key_name'],
+  'count'           => options['count'],
 })

@@ -55,7 +55,7 @@ END_OF_BANNER
       )
 
   opt('tags',
-      'tags to apply to image',
+      'comma-separated list of tags to apply',
       :type => String,
       :default => ENV['TAGS'],
       )
@@ -78,6 +78,12 @@ END_OF_BANNER
       :default => ENV['CHEF_ROLE'],
       )
 
+  opt('chef_environment',
+      'chef environment in which this instance will run',
+      :type => String,
+      :default => ENV['CHEF_ENVIRONMENT'] ? ENV['CHEF_ENVIRONMENT'] : 'production',
+      )
+
   opt('git_origin',
       'git origin to use',
       :type => String,
@@ -87,7 +93,7 @@ END_OF_BANNER
   opt('git_branch',
       'git branch to run off',
       :type => String,
-      :default => ENV['GIT_BRANCH'],
+      :default => ENV['GIT_BRANCH'] ? ENV['GIT_BRANCH'] : 'production',
       )
 
   opt('git_key',
@@ -98,8 +104,8 @@ END_OF_BANNER
 
   opt('count',
       'number of instances to launch',
-      :type => String,
-      :default => ENV['COUNT'],
+      :type => Integer,
+      :default => ENV['COUNT'] ? ENV['COUNT'] : 1,
       )
 
 end

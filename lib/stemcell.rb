@@ -12,16 +12,6 @@ module Stemcell
       ['aws_access_key',
        'aws_secret_key',
        'region',
-       'machine_type',
-       'image',
-       'security_group',
-
-       'chef_role',
-       'chef_environment',
-       'git_branch',
-       'git_key',
-       'git_origin',
-       'key_name',
       ].each do |req|
         raise ArgumentError, "missing required param #{req}" unless opts[req]
         instance_variable_set("@#{req}",opts[req])
@@ -32,41 +22,53 @@ module Stemcell
       @timeout = 120
       @start_time = Time.new
 
-      @tags = {
-        'Name' => "#{@chef_role}-#{@git_branch}",
-        'Group' => "#{@chef_role}-#{@git_branch}",
-        'created_by' => ENV['USER'],
-        'stemcell' => VERSION,
-      }
-      @tags.merge!(opts['tags']) if opts['tags']
-
-      begin
-        @git_key_contents = File.read(@git_key)
-      rescue Object => e
-        @git_key_contents = @git_key  # assume content is passed in
-      end
-
-      if opts.include?('chef_data_bag_secret')
-        begin
-          @chef_data_bag_secret = File.read(opts['chef_data_bag_secret'])
-        rescue Object => e
-          @chef_data_bag_secret = opts['chef_data_bag_secret'] # assume secret is passed in
-        end
-      else
-        @chef_data_bag_secret = ''
-      end
-
       AWS.config({:access_key_id => @aws_access_key, :secret_access_key => @aws_secret_key})
       @ec2 = AWS::EC2.new(:ec2_endpoint => @ec2_url)
       @ec2_region = @ec2.regions[@region]
-      @user_data = render_template
     end
 
+
     def launch(opts={})
-      File.open('/tmp/user-data', 'w') {|f| f.write(@user_data) }
-      instances = do_launch(opts)
+      options = create_options_hash(opts,[
+        'image_id',
+        'security_groups',
+        'key_name',
+        'count',
+        'chef_role',
+        'chef_environment',
+        'chef_data_bag_secret',
+        'git_branch',
+        'git_key',
+        'git_origin',
+        'machine_type',
+      ])
+
+      # attempt to accecpt keys as file paths
+      options['git_key'] = try_file(options['git_key'])
+      options['chef_data_bag_secret'] = try_file(options['chef_data_bag_secret'])
+
+      # generate tags and merge in any that were specefied as in inputs
+      options['tags'] = {
+        'Name' => "#{options['chef_role']}-#{options['chef_environment']}",
+        'Group' => "#{options['chef_role']}-#{options['chef_environment']}",
+        'created_by' => ENV['USER'],
+        'stemcell' => VERSION,
+      }
+      options['tags'].merge!(opts['tags']) if opts['tags']
+
+      # generate user data script to boot strap instance based on the
+      # options that we were passed.
+      user_data = render_template(options)
+Kernel.exit 1
+      # launch instances
+      instances = do_launch(options.merge({'user_data' => user_data}))
+
+      # wait for aws to report instance stats
       wait(instances)
+
+      # set tags on all instances launched
       set_tags(instances)
+
       print_run_info(instances)
       return instances
     end
@@ -139,19 +141,20 @@ module Stemcell
       return instances
     end
 
-    def set_tags(instances=[])
+    def set_tags(instances=[],tags={})
       instances.each do |instance|
-        instance.tags.set(@tags)
+        instance.tags.set(tags)
       end
     end
 
-    def render_template
+    def render_template(opts={})
       this_file = File.expand_path __FILE__
       base_dir = File.dirname this_file
       template_file_path = File.join(base_dir,'stemcell','templates','bootstrap.sh.erb')
       template_file = File.read(template_file_path)
       erb_template = ERB.new(template_file)
       generated_template = erb_template.result(binding)
+      @log.debug "genereated template is #{generated_template}"
       return generated_template
     end
 
@@ -162,5 +165,14 @@ module Stemcell
         instance.delete
       end
     end
+
+    def try_file(opt="")
+      begin
+        return File.read(opt)
+      rescue Object => e
+        return opt
+      end
+    end
+
   end
 end

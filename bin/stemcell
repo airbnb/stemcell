@@ -36,10 +36,10 @@ END_OF_BANNER
       :default => ENV['MACHINE_TYPE'] ? ENV['MACHINE_TYPE'] : 'm1.small',
       )
 
-  opt('image',
+  opt('image_id',
       'ami to use for launch',
       :type => String,
-      :default => ENV['AMI'] ? ENV['AMI'] : 'ami-d726abbe',
+      :default => ENV['IMAGE_ID'] ? ENV['IMAGE_ID'] : 'ami-d726abbe',
       )
 
   opt('security_group',
@@ -56,6 +56,7 @@ END_OF_BANNER
 
   opt('tags',
       'comma-separated list of tags to apply',
+      'tags to apply to instance',
       :type => String,
       :default => ENV['TAGS'],
       )
@@ -136,6 +137,24 @@ if options['tags']
 end
 options['tags'] = tags
 
-stemcell = Stemcell::Stemcell.new(options)
-stemcell.launch({'count' => options['count']})
 
+# create stemcell object
+stemcell = Stemcell::Stemcell.new({
+  'aws_access_key' => opts['aws_access_key'],
+  'aws_secret_key' => opts['aws_secret_key'],
+  'region'         => opts['region'],
+})
+
+
+# launch instance(s)
+stemcell.launch({
+  'machine_type'   => opts['machine_type'],
+  'image_id'       => opts['image_id'],
+  'security_group' => opts['security_group'],
+  'chef_role'      => opts['chef_role'],
+  'git_branch'     => opts['git_branch'],
+  'git_key'        => opts['git_key'],
+  'git_origin'     => opts['git_origin'],
+  'key_name'       => opts['key_name'],
+  'count'          => opts['count'],
+})

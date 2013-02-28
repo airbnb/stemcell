@@ -19,7 +19,6 @@ module Stemcell
         instance_variable_set("@#{req}",opts[req])
       end
 
-      @zone = opts.include?('availability_zone') ? opts['availability_zone'] : nil
       @ec2_url = "ec2.#{@region}.amazonaws.com"
       @timeout = 120
       @start_time = Time.new
@@ -71,6 +70,7 @@ module Stemcell
         :count => opts['count'],
         :user_data => user_data,
       }
+      launch_options.merge({:availability_zone => opts['availability_zone']}) if opts['availability_zone']
 
       # launch instances
       instances = do_launch(launch_options)
@@ -125,7 +125,6 @@ module Stemcell
     end
 
     def do_launch(opts={})
-      opts[:availability_zone] = opts['zone'] if opts['zone']
       @log.debug "about to launch instance(s) with options #{opts}"
       @log.info "launching instances"
       instances = @ec2_region.instances.create(opts)

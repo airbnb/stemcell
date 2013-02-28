@@ -63,8 +63,11 @@ $ ssh unbutu@$IP 'tail -f /var/log/init*'
 
 ### Terminating:
 
-This still needs to be completed. For now, you can kill using the
-amazon cli tools or the web ui.
+To terminate, use the necrosis command and pass a space seperated list of instance ids:
+
+```bash
+$ necrosis i-12345678 i-12345679 i-12345670
+```
 
 ## Automation ##
 

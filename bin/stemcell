@@ -30,10 +30,10 @@ END_OF_BANNER
       :default => ENV['REGION'] ? ENV['REGION'] : 'us-east-1',
       )
 
-  opt('machine_type',
+  opt('instance_type',
       'machine type to launch',
       :type => String,
-      :default => ENV['MACHINE_TYPE'] ? ENV['MACHINE_TYPE'] : 'm1.small',
+      :default => ENV['INSTANCE_TYPE'] ? ENV['INSTANCE_TYPE'] : 'm1.small',
       )
 
   opt('image_id',
@@ -154,7 +154,7 @@ stemcell = Stemcell::Stemcell.new({
 
 # launch instance(s)
 stemcell.launch({
-  'machine_type'         => options['machine_type'],
+  'instance_type'         => options['instance_type'],
   'image_id'             => options['image_id'],
   'security_groups'      => options['security_groups'],
   'chef_role'            => options['chef_role'],

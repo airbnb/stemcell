@@ -8,6 +8,8 @@ module Stemcell
   class Stemcell
     def initialize(opts={})
       @log = Logger.new(STDOUT)
+      @log.level = Logger::INFO unless ENV['DEBUG']
+      @log.info "creating new stemcell object"
       @log.debug "opts are #{opts.inspect}"
       ['aws_access_key',
        'aws_secret_key',
@@ -40,7 +42,7 @@ module Stemcell
         'git_branch',
         'git_key',
         'git_origin',
-        'machine_type',
+        'instance_type',
       ])
 
       # attempt to accecpt keys as file paths
@@ -70,6 +72,7 @@ module Stemcell
       set_tags(instances)
 
       print_run_info(instances)
+      @log.info "launched instances successfully"
       return instances
     end
 
@@ -125,7 +128,7 @@ module Stemcell
         :image_id,
         :security_groups,
         :user_data,
-        :machine_type,
+        :instance_type,
         :key_name,
         :count,
       ])
@@ -133,6 +136,7 @@ module Stemcell
       options[:availability_zone] = opts['zone'] if opts['zone']
 
       @log.debug "about to launch instance(s) with options #{options}"
+      @log.info "launching instances"
       instances = @ec2_region.instances.create(options)
       instances = [instances] unless instances.class == Array
       instances.each do |instance|
@@ -142,6 +146,7 @@ module Stemcell
     end
 
     def set_tags(instances=[],tags={})
+      @log.info "setting tags on instance(s)"
       instances.each do |instance|
         instance.tags.set(tags)
       end

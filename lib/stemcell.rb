@@ -48,7 +48,7 @@ module Stemcell
       opts['git_key'] = try_file(opts['git_key'])
       opts['chef_data_bag_secret'] = try_file(opts['chef_data_bag_secret'])
 
-      # generate tags and merge in any that were specefied as in inputs
+      # generate tags and merge in any that were specefied as inputs
       tags = {
         'Name' => "#{opts['chef_role']}-#{opts['chef_environment']}",
         'Group' => "#{opts['chef_role']}-#{opts['chef_environment']}",
@@ -86,12 +86,15 @@ module Stemcell
       return instances
     end
 
-    def kill(instance_list=[])
-      @log.info "killing instances #{instance_list}"
-      instances = instance_list.map {|id| @ec2.instances[id]}
+    def find_instance(id)
+      return @ec2.instances[id]
+    end
+
+    def kill(instances)
+      return if instances.nil?
       instances.each do |instance|
+        log.warn "Terminating instance #{instance.instance_id}"
         instance.terminate
-        @log.info "killed instance #{instance.id}"
       end
     end
 
@@ -113,7 +116,7 @@ module Stemcell
       while true
         sleep 5
         if Time.now - @start_time > @timeout
-          bail(instances)
+          kill(instances)
           raise TimeoutError, "exceded timeout of #{@timeout}"
         end
 
@@ -160,14 +163,6 @@ module Stemcell
       generated_template = erb_template.result(binding)
       @log.debug "genereated template is #{generated_template}"
       return generated_template
-    end
-
-    def bail(instances)
-      return if instances.nil?
-      instances.each do |instance|
-        log.warn "Terminating instance #{instance.instance_id}"
-        instance.delete
-      end
     end
 
     # attempt to accept keys as file paths

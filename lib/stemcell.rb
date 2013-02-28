@@ -86,6 +86,15 @@ module Stemcell
       return instances
     end
 
+    def kill(instance_list=[])
+      @log.info "killing instances #{instance_list}"
+      instances = instance_list.map {|id| @ec2.instances[id]}
+      instances.each do |instance|
+        instance.terminate
+        @log.info "killed instance #{instance.id}"
+      end
+    end
+
     private
 
     def print_run_info(instances)

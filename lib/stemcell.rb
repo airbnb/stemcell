@@ -59,7 +59,7 @@ module Stemcell
       # generate user data script to boot strap instance based on the
       # options that we were passed.
       user_data = render_template(options)
-Kernel.exit 1
+
       # launch instances
       instances = do_launch(options.merge({'user_data' => user_data}))
 
@@ -125,7 +125,7 @@ Kernel.exit 1
         :image_id,
         :security_groups,
         :user_data,
-        :instance_type,
+        :machine_type,
         :key_name,
         :count,
       ])

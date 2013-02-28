@@ -50,13 +50,13 @@ module Stemcell
       options['chef_data_bag_secret'] = try_file(options['chef_data_bag_secret'])
 
       # generate tags and merge in any that were specefied as in inputs
-      options['tags'] = {
+      tags = {
         'Name' => "#{options['chef_role']}-#{options['chef_environment']}",
         'Group' => "#{options['chef_role']}-#{options['chef_environment']}",
         'created_by' => ENV['USER'],
         'stemcell' => VERSION,
       }
-      options['tags'].merge!(opts['tags']) if opts['tags']
+      tags.merge!(opts['tags']) if opts['tags']
 
       # generate user data script to boot strap instance based on the
       # options that we were passed.
@@ -69,7 +69,7 @@ module Stemcell
       wait(instances)
 
       # set tags on all instances launched
-      set_tags(instances)
+      set_tags(instances,tags)
 
       print_run_info(instances)
       @log.info "launched instances successfully"
@@ -145,7 +145,7 @@ module Stemcell
       return instances
     end
 
-    def set_tags(instances=[],tags={})
+    def set_tags(instances=[],tags)
       @log.info "setting tags on instance(s)"
       instances.each do |instance|
         instance.tags.set(tags)

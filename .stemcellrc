@@ -1,10 +1,10 @@
-# these should be set
+# these options need to be set
 export AWS_ACCESS_KEY=your_aws_access_key
 export AWS_SECRET_KEY=your_aws_secret_key
+export KEY_NAME=your_aws_ssh_key_name
 export CHEF_DATA_BAG_SECRET=/path/to/encrypted/data/bag/secret
 export GIT_KEY=/path/to/chef/deploy/key
-export KEY_NAME=your_aws_ssh_key_name
 
-# this defaults should be ok
+# these options should not need to be set
 export SECURITY_GROUP=default
 export GIT_ORIGIN=git@github.com:airbnb/chef.git

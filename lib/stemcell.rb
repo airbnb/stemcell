@@ -9,7 +9,7 @@ module Stemcell
     def initialize(opts={})
       @log = Logger.new(STDOUT)
       @log.level = Logger::INFO unless ENV['DEBUG']
-      @log.info "creating new stemcell object"
+      @log.debug "creating new stemcell object"
       @log.debug "opts are #{opts.inspect}"
       ['aws_access_key',
        'aws_secret_key',
@@ -31,7 +31,7 @@ module Stemcell
 
 
     def launch(opts={})
-      options = create_options_hash(opts,[
+      verify_required_options(opts,[
         'image_id',
         'security_groups',
         'key_name',
@@ -45,31 +45,41 @@ module Stemcell
         'instance_type',
       ])
 
-      # attempt to accecpt keys as file paths
-      options['git_key'] = try_file(options['git_key'])
-      options['chef_data_bag_secret'] = try_file(options['chef_data_bag_secret'])
+      # attempt to accept keys as file paths
+      opts['git_key'] = try_file(opts['git_key'])
+      opts['chef_data_bag_secret'] = try_file(opts['chef_data_bag_secret'])
 
       # generate tags and merge in any that were specefied as in inputs
       tags = {
-        'Name' => "#{options['chef_role']}-#{options['chef_environment']}",
-        'Group' => "#{options['chef_role']}-#{options['chef_environment']}",
+        'Name' => "#{opts['chef_role']}-#{opts['chef_environment']}",
+        'Group' => "#{opts['chef_role']}-#{opts['chef_environment']}",
         'created_by' => ENV['USER'],
         'stemcell' => VERSION,
       }
       tags.merge!(opts['tags']) if opts['tags']
 
       # generate user data script to boot strap instance based on the
-      # options that we were passed.
-      user_data = render_template(options)
+      # opts that we were passed.
+      user_data = render_template(opts)
+
+      launch_options = {
+        :image_id => opts['image_id'],
+        :security_groups => opts['security_groups'],
+        :user_data => opts['user_data'],
+        :instance_type => opts['instance_type'],
+        :key_name => opts['key_name'],
+        :count => opts['count'],
+        :user_data => user_data,
+      }
 
       # launch instances
-      instances = do_launch(options.merge({'user_data' => user_data}))
+      instances = do_launch(launch_options)
 
       # wait for aws to report instance stats
       wait(instances)
 
       # set tags on all instances launched
-      set_tags(instances,tags)
+      set_tags(instances, tags)
 
       print_run_info(instances)
       @log.info "launched instances successfully"
@@ -106,38 +116,19 @@ module Stemcell
       @log.info "all instances in running state"
     end
 
-    # given a hash of params and a list of options, assemble and
-    # return a hash that merges the currently set instance variables
-    # and the provided params. raise an error if an option will not be set
-    def create_options_hash(params,option_list)
-      hash = {}
-      option_list.each do |option|
-        if params[option.to_s]
-          hash[option] = params[option.to_s]
-        elsif instance_variable_defined?("@#{option.to_s}")
-          hash[option] = instance_variable_get("@#{option.to_s}")
-        else
-          raise ArgumentError, "you need to supply option #{option}"
-        end
+    def verify_required_options(params,required_options)
+      @log.debug "params is #{params}"
+      @log.debug "required_options are #{required_options}"
+      required_options.each do |required|
+        raise ArgumentError, "you need to provide option #{required}" unless params[required]
       end
-      return hash
     end
 
     def do_launch(opts={})
-      options = create_options_hash(opts,[
-        :image_id,
-        :security_groups,
-        :user_data,
-        :instance_type,
-        :key_name,
-        :count,
-      ])
-
-      options[:availability_zone] = opts['zone'] if opts['zone']
-
-      @log.debug "about to launch instance(s) with options #{options}"
+      opts[:availability_zone] = opts['zone'] if opts['zone']
+      @log.debug "about to launch instance(s) with options #{opts}"
       @log.info "launching instances"
-      instances = @ec2_region.instances.create(options)
+      instances = @ec2_region.instances.create(opts)
       instances = [instances] unless instances.class == Array
       instances.each do |instance|
         @log.info "launched instance #{instance.instance_id}"
@@ -171,6 +162,7 @@ module Stemcell
       end
     end
 
+    # attempt to accept keys as file paths
     def try_file(opt="")
       begin
         return File.read(opt)

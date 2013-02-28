@@ -33,12 +33,12 @@ exec 2> /var/log/init.err
 chef_version=11.4.0
 chef_dir=/etc/chef
 converge=/usr/local/bin/converge
-role=<%= @chef_role %>
-environment=<%= @chef_environment %>
-origin=<%= @git_origin %>
-branch=<%= @git_branch %>
-git_key='<%= @git_key_contents %>'
-data_bag_secret='<%= @chef_data_bag_secret %>'
+role=<%= opts['chef_role'] %>
+environment=<%= opts['chef_environment'] %>
+origin=<%= opts['git_origin'] %>
+branch=<%= opts['git_branch'] %>
+git_key='<%= opts["git_key"] %>'
+data_bag_secret='<%= opts["chef_data_bag_secret"] %>'
 
 
 ##

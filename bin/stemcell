@@ -30,22 +30,22 @@ END_OF_BANNER
       :default => ENV['REGION'] ? ENV['REGION'] : 'us-east-1',
       )
 
-  opt('machine_type',
-      'instance type to launch',
+  opt('instance_type',
+      'machine type to launch',
       :type => String,
-      :default => ENV['MACHINE_TYPE'] ? ENV['MACHINE_TYPE'] : 'm1.small',
+      :default => ENV['INSTANCE_TYPE'] ? ENV['INSTANCE_TYPE'] : 'm1.small',
       )
 
-  opt('image',
+  opt('image_id',
       'ami to use for launch',
       :type => String,
-      :default => ENV['AMI'] ? ENV['AMI'] : 'ami-d726abbe',
+      :default => ENV['IMAGE_ID'] ? ENV['IMAGE_ID'] : 'ami-d726abbe',
       )
 
-  opt('security_group',
-      'security group to launch instance with',
+  opt('security_groups',
+      'security groups to launch instance with',
       :type => String,
-      :default => ENV['SECURITY_GROUP'] ? ENV['SECURITY_GROUP'] : 'default',
+      :default => ENV['SECURITY_GROUPS'] ? ENV['SECURITY_GROUPS'] : 'default',
       )
 
   opt('availability-zone',
@@ -55,7 +55,7 @@ END_OF_BANNER
       )
 
   opt('tags',
-      'comma-separated list of tags to apply',
+      'comma-separated list of key=value pairs to apply',
       :type => String,
       :default => ENV['TAGS'],
       )
@@ -81,7 +81,7 @@ END_OF_BANNER
   opt('chef_environment',
       'chef environment in which this instance will run',
       :type => String,
-      :default => ENV['CHEF_ENVIRONMENT'] ? ENV['CHEF_ENVIRONMENT'] : 'production',
+      :default => ENV['CHEF_ENVIRONMENT'],
       )
 
   opt('git_origin',
@@ -114,6 +114,8 @@ required_parameters = [
                        'aws_access_key',
                        'aws_secret_key',
                        'chef_role',
+                       'chef_environment',
+                       'chef_data_bag_secret',
                        'git_branch',
                        'git_key',
                        'git_origin',
@@ -126,6 +128,7 @@ by the #{arg.upcase.gsub('-','_')} environment variable" if
     options[arg].nil? or ! options[arg]
 end
 
+
 # convert tags from string to ruby hash
 tags = {}
 if options['tags']
@@ -136,6 +139,30 @@ if options['tags']
 end
 options['tags'] = tags
 
-stemcell = Stemcell::Stemcell.new(options)
-stemcell.launch({'count' => options['count']})
 
+# convert security_groups from comma seperated string to ruby array
+options['security_groups'] = options['security_groups'].split(',')
+
+
+# create stemcell object
+stemcell = Stemcell::Stemcell.new({
+  'aws_access_key' => options['aws_access_key'],
+  'aws_secret_key' => options['aws_secret_key'],
+  'region'         => options['region'],
+})
+
+
+# launch instance(s)
+stemcell.launch({
+  'instance_type'         => options['instance_type'],
+  'image_id'             => options['image_id'],
+  'security_groups'      => options['security_groups'],
+  'chef_role'            => options['chef_role'],
+  'chef_environment'     => options['chef_environment'],
+  'chef_data_bag_secret' => options['chef_data_bag_secret'],
+  'git_branch'           => options['git_branch'],
+  'git_key'              => options['git_key'],
+  'git_origin'           => options['git_origin'],
+  'key_name'             => options['key_name'],
+  'count'                => options['count'],
+})

@@ -24,10 +24,11 @@ $ gem install stemcell
 
 ## Configuration
 
-You will need to edit .stemcellrc and add the specified params. You
-can get most of the options from your .chef/knife.rb but you will need
-to get the new chef deploy key so that instances that you launch can
-download code.
+You should create an rc file for stemcell with your standard options
+(and place it in the root dir as .stemcellrc?). You can see an example
+in examples/stemcellrc. You can get most of the options from your
+.chef/knife.rb but you will need to get the new chef deploy key so
+that instances that you launch can download code.
 
 ## Usage
 

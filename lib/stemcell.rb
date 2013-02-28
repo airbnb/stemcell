@@ -89,7 +89,7 @@ module Stemcell
     end
 
     def wait(instances)
-      @log.info "Waiting for #{instances.count} instances (#{instances.inspect}):"
+      @log.info "Waiting up to #{@timeout} seconds for #{instances.count} instances (#{instances.inspect}):"
 
       while true
         sleep 5

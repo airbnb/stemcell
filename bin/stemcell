@@ -55,7 +55,7 @@ END_OF_BANNER
       )
 
   opt('tags',
-      'comma-separated list of tags to apply',
+      'comma-separated list of key=value pairs to apply',
       :type => String,
       :default => ENV['TAGS'],
       )

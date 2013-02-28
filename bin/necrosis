@@ -1,0 +1,61 @@
+#!/usr/bin/env ruby
+
+# -*- mode: shell -*- 
+
+require_relative '../lib/stemcell'
+
+require 'trollop'
+
+options = Trollop::options do
+  version "stemcell #{Stemcell::VERSION} (c) 2013 Martin Rhoads"
+  banner <<END_OF_BANNER
+  welcome to stemcell
+END_OF_BANNER
+
+  opt('aws_access_key',
+      "aws access key",
+      :type => String,
+      :default => ENV['AWS_ACCESS_KEY']
+      )
+
+  opt('aws_secret_key',
+      "aws secret key",
+      :type => String,
+      :default => ENV['AWS_SECRET_KEY']
+      )
+
+  opt('region',
+      'ec2 region to launch in',
+      :type => String,
+      :default => ENV['REGION'] ? ENV['REGION'] : 'us-east-1',
+      )
+
+end
+
+
+required_parameters = [
+                       'aws_access_key',
+                       'aws_secret_key',
+                      ]
+
+
+required_parameters.each do |arg|
+  raise ArgumentError, "--#{arg.gsub('_','-')} needs to be specified on the commandline or set \
+by the #{arg.upcase.gsub('-','_')} environment variable" if
+    options[arg].nil? or ! options[arg]
+end
+
+
+raise ArgumentError, "you did not provide any instance ids to kill" if ARGV.size == 0
+
+
+# create stemcell object
+stemcell = Stemcell::Stemcell.new({
+  'aws_access_key' => options['aws_access_key'],
+  'aws_secret_key' => options['aws_secret_key'],
+  'region'         => options['region'],
+})
+
+
+# launch instance(s)
+stemcell.kill(ARGV)

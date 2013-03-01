@@ -129,7 +129,7 @@ module Stemcell
       @log.debug "params is #{params}"
       @log.debug "required_options are #{required_options}"
       required_options.each do |required|
-        raise ArgumentError, "you need to provide option #{required}" unless params[required]
+        raise ArgumentError, "you need to provide option #{required}" unless params.include?(required)
       end
     end
 

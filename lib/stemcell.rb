@@ -56,10 +56,7 @@ module Stemcell
       }
       tags.merge!(opts['tags']) if opts['tags']
 
-      # generate user data script to boot strap instance based on the
-      # opts that we were passed.
-      user_data = render_template(opts)
-
+      # generate launch options
       launch_options = {
         :image_id => opts['image_id'],
         :security_groups => opts['security_groups'],
@@ -69,7 +66,12 @@ module Stemcell
         :count => opts['count'],
         :user_data => user_data,
       }
-      launch_options.merge({:availability_zone => opts['availability_zone']}) if opts['availability_zone']
+
+      # specify availability zone (optional)
+      launch_options[:availability_zone] = opts['availability_zone'] if opts['availability_zone']
+
+      # generate user data script to bootstrap instance, include in launch optsions
+      launch_options[:user_data] = render_template(opts)
 
       # launch instances
       instances = do_launch(launch_options)

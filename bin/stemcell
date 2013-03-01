@@ -154,7 +154,8 @@ stemcell = Stemcell::Stemcell.new({
 
 # launch instance(s)
 stemcell.launch({
-  'instance_type'         => options['instance_type'],
+  'availability_zone'    => options['availability_zone'],
+  'instance_type'        => options['instance_type'],
   'image_id'             => options['image_id'],
   'security_groups'      => options['security_groups'],
   'chef_role'            => options['chef_role'],
@@ -164,5 +165,6 @@ stemcell.launch({
   'git_key'              => options['git_key'],
   'git_origin'           => options['git_origin'],
   'key_name'             => options['key_name'],
+  'tags'                 => options['tags'],
   'count'                => options['count'],
 })

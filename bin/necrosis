@@ -42,13 +42,7 @@ ec2 = AWS::EC2.new(:access_key_id => options['aws_access_key'], :secret_access_k
 ec2.regions.each do |region|
   instances.each do |id, objects|
     instance = region.instances[id]
-    begin
-      instance.status
-    rescue
-      next
-    else
-      objects << [instance, region]
-    end
+    objects << [instance, region] if instance.exists?
   end
 end
 

@@ -25,7 +25,6 @@ module Stemcell
 
       AWS.config({:access_key_id => @aws_access_key, :secret_access_key => @aws_secret_key})
       @ec2 = AWS::EC2.new(:ec2_endpoint => @ec2_url)
-      @ec2_region = @ec2.regions[@region]
     end
 
 
@@ -136,7 +135,7 @@ module Stemcell
     def do_launch(opts={})
       @log.debug "about to launch instance(s) with options #{opts}"
       @log.info "launching instances"
-      instances = @ec2_region.instances.create(opts)
+      instances = @ec2.instances.create(opts)
       instances = [instances] unless instances.class == Array
       instances.each do |instance|
         @log.info "launched instance #{instance.instance_id}"

@@ -64,7 +64,6 @@ module Stemcell
         :instance_type => opts['instance_type'],
         :key_name => opts['key_name'],
         :count => opts['count'],
-        :user_data => user_data,
       }
 
       # specify availability zone (optional)

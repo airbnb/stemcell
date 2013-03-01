@@ -48,10 +48,10 @@ END_OF_BANNER
       :default => ENV['SECURITY_GROUPS'] ? ENV['SECURITY_GROUPS'] : 'default',
       )
 
-  opt('availability-zone',
+  opt('availability_zone',
       'zone in which to launch instances',
       :type => String,
-      :default => ENV['AVAILABILITY-ZONE'],
+      :default => ENV['AVAILABILITY_ZONE'],
       )
 
   opt('tags',

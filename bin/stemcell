@@ -7,10 +7,8 @@ require_relative '../lib/stemcell'
 require 'trollop'
 
 options = Trollop::options do
-  version "stemcell #{Stemcell::VERSION} (c) 2013 Martin Rhoads"
-  banner <<END_OF_BANNER
-  welcome to stemcell
-END_OF_BANNER
+  version "stemcell #{Stemcell::VERSION} (c) 2013 Airbnb"
+  banner  "Stemcell: get ready to rock"
 
   opt('aws_access_key',
       "aws access key",

@@ -2,15 +2,12 @@
 
 # -*- mode: shell -*- 
 
-require_relative '../lib/stemcell'
-
+require 'aws-sdk'
 require 'trollop'
 
 options = Trollop::options do
-  version "stemcell #{Stemcell::VERSION} (c) 2013 Martin Rhoads"
-  banner <<END_OF_BANNER
-  welcome to stemcell
-END_OF_BANNER
+  version "stemcell #{Stemcell::VERSION} (c) Airbnb, Inc."
+  banner  "Necrosis: the killing script"
 
   opt('aws_access_key',
       "aws access key",

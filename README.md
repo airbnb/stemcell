@@ -58,7 +58,7 @@ $ ./bin/stemcell --help
 ### Watching install:
 
 ```bash
-$ ssh unbutu@$IP 'tail -f /var/log/init*'
+$ ssh ubuntu@$IP 'tail -f /var/log/init*'
 ```
 
 ### Terminating:

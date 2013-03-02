@@ -91,5 +91,5 @@ Finally, we couldn't resist doing a bit of code archeology.
 People have been using chef with EC2 for a long time!
 One early article is [this one](http://web.archive.org/web/20110404114025/http://probablyinteractive.com/2009/3/29/Amazon%20EC2%20+%20Chef%20=%20Mmmmm.html), which isn't even on the web anymore.
 However, it's spawned some recently-active tools like [this](https://github.com/conormullen/chef-bootstrap) and [this](https://github.com/grempe/chef-solo-bootstrap).
-Similar approaches are mentioned [here](http://www.opinionatedprogrammer.com/2011/06/chef-solo-tutorial-managing-a-single-server-with-chef/), with code [herh](https://github.com/ciastek/ubuntu-chef-solo) or [here](https://github.com/riywo/ubuntu-chef-solo) (with accompanying [blog post](http://weblog.riywo.com/post/35976125760))
+Similar approaches are mentioned [here](http://www.opinionatedprogrammer.com/2011/06/chef-solo-tutorial-managing-a-single-server-with-chef/), with code [here](https://github.com/ciastek/ubuntu-chef-solo) or [here](https://github.com/riywo/ubuntu-chef-solo) (with accompanying [blog post](http://weblog.riywo.com/post/35976125760))
 [This article](http://illuminatedcomputing.com/posts/2012/02/simple-chef-solo-tutorial/), also mentions many worthwhile predecessors.

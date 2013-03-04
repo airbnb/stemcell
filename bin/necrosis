@@ -6,7 +6,7 @@ require 'aws-sdk'
 require 'trollop'
 
 options = Trollop::options do
-  version "stemcell #{Stemcell::VERSION} (c) Airbnb, Inc."
+  version "Necrosis 0.1.0 (c) Airbnb, Inc."
   banner  "Necrosis: the killing script"
 
   opt('aws_access_key',

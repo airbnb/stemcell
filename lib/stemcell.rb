@@ -93,7 +93,7 @@ module Stemcell
     def kill(instances)
       return if instances.nil?
       instances.each do |instance|
-        log.warn "Terminating instance #{instance.instance_id}"
+        @log.warn "Terminating instance #{instance.instance_id}"
         instance.terminate
       end
     end

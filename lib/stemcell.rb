@@ -90,12 +90,16 @@ module Stemcell
       return @ec2.instances[id]
     end
 
-    def kill(instances)
+    def kill(instances,opts={})
       return if instances.nil?
       instances.each do |i|
-        instance = find_instance(i)
-        @log.warn "Terminating instance #{instance.instance_id}"
-        instance.terminate
+        begin
+          instance = find_instance(i)
+          @log.warn "Terminating instance #{instance.instance_id}"
+          instance.terminate
+        rescue AWS::EC2::Errors::InvalidInstanceID::NotFound => e
+          throw e unless opts[:ignore_not_found]
+        end
       end
     end
 

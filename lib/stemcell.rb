@@ -69,6 +69,9 @@ module Stemcell
       # specify availability zone (optional)
       launch_options[:availability_zone] = opts['availability_zone'] if opts['availability_zone']
 
+      # specify IAM role (optional)
+      launch_options[:iam_instance_profile] = opts['iam_role'] if opts['iam_role']
+
       # generate user data script to bootstrap instance, include in launch optsions
       launch_options[:user_data] = render_template(opts)
 

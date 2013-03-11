@@ -64,6 +64,12 @@ options = Trollop::options do
       :default => ENV['KEY_NAME'],
       )
 
+  opt('iam_role',
+      'IAM role to associate with the instance',
+      :type => String,
+      :default => ENV['IAM_ROLE'],
+      )
+
   opt('chef_data_bag_secret',
       'path to secret file (or the string containing the secret)',
       :type => String,

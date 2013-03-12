@@ -171,4 +171,5 @@ stemcell.launch({
   'key_name'             => options['key_name'],
   'tags'                 => options['tags'],
   'count'                => options['count'],
+  'iam_role'             => options['iam_role'],
 })

@@ -72,6 +72,9 @@ module Stemcell
       # specify IAM role (optional)
       launch_options[:iam_instance_profile] = opts['iam_role'] if opts['iam_role']
 
+      # specify an EBS-optimized instance (optional)
+      launch_options[:ebs_optimized] = true if opts['ebs_optimized']
+
       # generate user data script to bootstrap instance, include in launch optsions
       launch_options[:user_data] = render_template(opts)
 

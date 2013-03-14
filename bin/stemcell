@@ -70,6 +70,11 @@ options = Trollop::options do
       :default => ENV['IAM_ROLE'],
       )
 
+  opt('ebs_optimized',
+      'launch an EBS-Optimized instance',
+      :type => :flag,
+      )
+
   opt('chef_data_bag_secret',
       'path to secret file (or the string containing the secret)',
       :type => String,
@@ -172,4 +177,5 @@ stemcell.launch({
   'tags'                 => options['tags'],
   'count'                => options['count'],
   'iam_role'             => options['iam_role'],
+  'ebs_optimized'        => options['ebs_optimized'],
 })

@@ -151,7 +151,7 @@ module Stemcell
       @log.debug "about to launch instance(s) with options #{opts}"
       @log.info "launching instances"
       instances = @ec2.instances.create(opts)
-      instances = [instances] unless instances.class == Array
+      instances = [instances] unless instances.class == AWS::Core::Data::List
       instances.each do |instance|
         @log.info "launched instance #{instance.instance_id}"
       end

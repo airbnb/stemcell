@@ -2,7 +2,7 @@
 
 # -*- mode: shell -*- 
 
-require 'aws-sdk'
+require 'fog'
 require 'trollop'
 
 options = Trollop::options do
@@ -20,6 +20,8 @@ options = Trollop::options do
       :type => String,
       :default => ENV['AWS_SECRET_KEY']
       )
+
+  opt('force', "force removal without confirmation", :short => "-f")
 end
 
 required_parameters = [
@@ -36,45 +38,53 @@ end
 raise ArgumentError, "you did not provide any instance ids to kill" if ARGV.size == 0
 
 # a hash from instance_id => [ec2 instance objects]
-instances = ARGV.inject({}) { |h, n| h[n] = []; h }
+to_kill = ARGV.inject({}) { |h, n| h[n] = []; h }
 
-ec2 = AWS::EC2.new(:access_key_id => options['aws_access_key'], :secret_access_key => options['aws_secret_key'])
-ec2.regions.each do |region|
-  instances.each do |id, objects|
-    instance = region.instances[id]
-    objects << [instance, region] if instance.exists?
+creds = {
+  :provider => 'AWS',
+  :aws_access_key_id => options['aws_access_key'],
+  :aws_secret_access_key => options['aws_secret_key']}
+
+f = Fog::Compute.new(creds)
+f.describe_regions.body['regionInfo'].each do |regionInfo|
+  creds[:region] = regionInfo['regionName']
+  con = Fog::Compute.new(creds)
+  con.servers.each do |server|
+    to_kill[server.id] << server if to_kill.keys.include? server.id
   end
 end
 
+
 # kill the instances
-instances.each do |id, objects|
-  if objects.count == 0
+to_kill.each do |id, servers|
+  if servers.count == 0
     puts "No instance #{id} found"
     next
   end
 
-  if objects.count > 1
+  if servers.count > 1
     puts "Found multiple instances named #{id}"
     next
   end
 
-  instance, region = objects[0]
-  if instance.api_termination_disabled?
-    puts "Cannot terminate instance #{id} -- termination protection enabled"
-    next
+  server = servers[0]
+  tags = server.tags
+  puts "Instance #{server.id} (#{server.state} in #{server.availability_zone})"
+  puts "\tKey name: #{server.key_name}"
+  puts "\tLaunched: #{server.created_at}"
+  tags.keys.sort.each do |tag|
+    puts "\t#{tag} : #{tags[tag]}"
   end
 
-  puts "Instance #{id} (#{instance.status} in #{region.name})"
-  puts "\tKey name: #{instance.key_name}"
-  puts "\tLaunched: #{instance.launch_time}"
-  instance.tags.to_h.each do |k, v|
-    puts "\t#{k} : #{v}"
+  kill = true
+  unless options['force']
+    puts "Terminate? (y/N)? "
+    confirm = $stdin.gets
+    kill = false unless confirm && confirm.chomp.downcase == 'y'
   end
 
-  puts "Terminate? (y/N)? "
-  confirm = $stdin.gets
-  if confirm && confirm.chomp.downcase == 'y'
-    instance.terminate
-    puts "Instance #{id} terminated"
+  if kill
+    server.destroy
+    puts "Instance #{server.id} terminated"
   end
 end

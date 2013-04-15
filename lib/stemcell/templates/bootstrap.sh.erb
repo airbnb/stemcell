@@ -118,7 +118,10 @@ log_level        :info
 log_location     STDOUT
 EOF
 
-  echo -e "$data_bag_secret" > ${chef_dir}/encrypted_data_bag_secret
+  $encrypted_data_bag_secret_file=${chef_dir}/encrypted_data_bag_secret
+  echo -e "$data_bag_secret" > $encrypted_data_bag_secret_file
+  chmod 0400 $encrypted_data_bag_secret_file
+
   echo "chef configured"
 }
 

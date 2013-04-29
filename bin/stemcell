@@ -2,7 +2,7 @@
 
 # -*- mode: shell -*- 
 
-require_relative '../lib/stemcell'
+require 'stemcell'
 
 require 'trollop'
 

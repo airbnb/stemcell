@@ -2,7 +2,7 @@ require 'logger'
 require 'erb'
 require 'aws-sdk'
 
-require_relative "stemcell/version"
+require "stemcell/version"
 
 module Stemcell
   class Stemcell

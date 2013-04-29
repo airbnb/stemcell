@@ -25,96 +25,96 @@ options = Trollop::options do
   opt('region',
       'ec2 region to launch in',
       :type => String,
-      :default => ENV['REGION'] ? ENV['REGION'] : 'us-east-1',
+      :default => ENV['REGION'] ? ENV['REGION'] : 'us-east-1'
       )
 
   opt('instance_type',
       'machine type to launch',
       :type => String,
-      :default => ENV['INSTANCE_TYPE'] ? ENV['INSTANCE_TYPE'] : 'm1.small',
+      :default => ENV['INSTANCE_TYPE'] ? ENV['INSTANCE_TYPE'] : 'm1.small'
       )
 
   opt('image_id',
       'ami to use for launch',
       :type => String,
-      :default => ENV['IMAGE_ID'] ? ENV['IMAGE_ID'] : 'ami-d726abbe',
+      :default => ENV['IMAGE_ID'] ? ENV['IMAGE_ID'] : 'ami-d726abbe'
       )
 
   opt('security_groups',
       'security groups to launch instance with',
       :type => String,
-      :default => ENV['SECURITY_GROUPS'] ? ENV['SECURITY_GROUPS'] : 'default',
+      :default => ENV['SECURITY_GROUPS'] ? ENV['SECURITY_GROUPS'] : 'default'
       )
 
   opt('availability_zone',
       'zone in which to launch instances',
       :type => String,
-      :default => ENV['AVAILABILITY_ZONE'],
+      :default => ENV['AVAILABILITY_ZONE']
       )
 
   opt('tags',
       'comma-separated list of key=value pairs to apply',
       :type => String,
-      :default => ENV['TAGS'],
+      :default => ENV['TAGS']
       )
 
   opt('key_name',
       'aws ssh key name for the ubuntu user',
       :type => String,
-      :default => ENV['KEY_NAME'],
+      :default => ENV['KEY_NAME']
       )
 
   opt('iam_role',
       'IAM role to associate with the instance',
       :type => String,
-      :default => ENV['IAM_ROLE'],
+      :default => ENV['IAM_ROLE']
       )
 
   opt('ebs_optimized',
       'launch an EBS-Optimized instance',
-      :type => :flag,
+      :type => :flag
       )
 
   opt('chef_data_bag_secret',
       'path to secret file (or the string containing the secret)',
       :type => String,
-      :default => ENV['CHEF_DATA_BAG_SECRET'],
+      :default => ENV['CHEF_DATA_BAG_SECRET']
       )
 
   opt('chef_role',
       'chef role of instance to be launched',
       :type => String,
-      :default => ENV['CHEF_ROLE'],
+      :default => ENV['CHEF_ROLE']
       )
 
   opt('chef_environment',
       'chef environment in which this instance will run',
       :type => String,
-      :default => ENV['CHEF_ENVIRONMENT'],
+      :default => ENV['CHEF_ENVIRONMENT']
       )
 
   opt('git_origin',
       'git origin to use',
       :type => String,
-      :default => ENV['GIT_ORIGIN'],
+      :default => ENV['GIT_ORIGIN']
       )
 
   opt('git_branch',
       'git branch to run off',
       :type => String,
-      :default => ENV['GIT_BRANCH'] ? ENV['GIT_BRANCH'] : 'production',
+      :default => ENV['GIT_BRANCH'] ? ENV['GIT_BRANCH'] : 'production'
       )
 
   opt('git_key',
       'path to the git repo deploy key (or the string containing the key)',
       :type => String,
-      :default => ENV['GIT_KEY'],
+      :default => ENV['GIT_KEY']
       )
 
   opt('count',
       'number of instances to launch',
       :type => Integer,
-      :default => ENV['COUNT'] ? ENV['COUNT'] : 1,
+      :default => ENV['COUNT'] ? ENV['COUNT'] : 1
       )
 
 end

@@ -41,7 +41,7 @@ options = Trollop::options do
       )
 
   opt('security_groups',
-      'security groups to launch instance with',
+      'comma-separated list of security groups to launch instance with',
       :type => String,
       :default => ENV['SECURITY_GROUPS'] ? ENV['SECURITY_GROUPS'] : 'default'
       )
@@ -73,6 +73,12 @@ options = Trollop::options do
   opt('ebs_optimized',
       'launch an EBS-Optimized instance',
       :type => :flag
+      )
+
+  opt('ephemeral_devices',
+      'comma-separated list of block devices to map ephemeral devices to',
+      :type => String,
+      :default => ENV['EPHEMERAL_DEVICES']
       )
 
   opt('chef_data_bag_secret',
@@ -153,6 +159,10 @@ options['tags'] = tags
 options['security_groups'] = options['security_groups'].split(',')
 
 
+# convert ephemeral_devices from comma separated string to ruby array
+options['ephemeral_devices'] = options['ephemeral_devices'].split(',') if options['ephemeral_devices']
+
+
 # create stemcell object
 stemcell = Stemcell::Stemcell.new({
   'aws_access_key' => options['aws_access_key'],
@@ -178,4 +188,5 @@ stemcell.launch({
   'count'                => options['count'],
   'iam_role'             => options['iam_role'],
   'ebs_optimized'        => options['ebs_optimized'],
+  'ephemeral_devices'    => options['ephemeral_devices'],
 })

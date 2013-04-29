@@ -75,6 +75,16 @@ module Stemcell
       # specify an EBS-optimized instance (optional)
       launch_options[:ebs_optimized] = true if opts['ebs_optimized']
 
+      # specify block device mappings (optional)
+      if opts['ephemeral_devices']
+        launch_options[:block_device_mappings] = opts['ephemeral_devices'].each_with_index.map do |device,i|
+          {
+            :device_name => device,
+            :virtual_name => "ephemeral#{i}"
+          }
+        end
+      end
+
       # generate user data script to bootstrap instance, include in launch optsions
       launch_options[:user_data] = render_template(opts)
 

@@ -16,7 +16,8 @@ Gem::Specification.new do |gem|
   gem.executables   = gem.files.grep(%r{^bin/}).map{ |f| File.basename(f) }
   gem.test_files    = gem.files.grep(%r{^(test|spec|features)/})
   gem.require_paths = ["lib"]
-  gem.add_runtime_dependency 'trollop'
-  gem.add_runtime_dependency 'aws-sdk'
+  gem.add_runtime_dependency 'trollop', '~> 2.0'
+  gem.add_runtime_dependency 'aws-sdk', '~> 1.9'
+  gem.add_runtime_dependency 'fog', '~> 1.10'
 end
 

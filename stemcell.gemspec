@@ -18,5 +18,6 @@ Gem::Specification.new do |gem|
   gem.require_paths = ["lib"]
   gem.add_runtime_dependency 'trollop'
   gem.add_runtime_dependency 'aws-sdk'
+  gem.add_runtime_dependency 'fog'
 end
 

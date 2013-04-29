@@ -64,6 +64,11 @@ module Stemcell
         :instance_type => opts['instance_type'],
         :key_name => opts['key_name'],
         :count => opts['count'],
+        :block_device_mappings => {
+          "/dev/sdc" => "ephemeral1",
+          "/dev/sdd" => "ephemeral2",
+          "/dev/sde" => "ephemeral3",
+        },
       }
 
       # specify availability zone (optional)

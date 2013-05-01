@@ -70,6 +70,12 @@ options = Trollop::options do
       :default => ENV['IAM_ROLE']
       )
 
+  opt('placement_group',
+      'Placement group to associate with the instance',
+      :type => String,
+      :default => ENV['PLACEMENT_GROUP']
+      )
+
   opt('ebs_optimized',
       'launch an EBS-Optimized instance',
       :type => :flag
@@ -189,4 +195,5 @@ stemcell.launch({
   'iam_role'             => options['iam_role'],
   'ebs_optimized'        => options['ebs_optimized'],
   'ephemeral_devices'    => options['ephemeral_devices'],
+  'placement_group'      => options['placement_group'],
 })

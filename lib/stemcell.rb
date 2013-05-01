@@ -72,6 +72,13 @@ module Stemcell
       # specify IAM role (optional)
       launch_options[:iam_instance_profile] = opts['iam_role'] if opts['iam_role']
 
+      # specify placement group (optional)
+      if opts['placement_group']
+        launch_options[:placement] = {
+          :group_name => opts['placement_group'],
+        }
+      end
+
       # specify an EBS-optimized instance (optional)
       launch_options[:ebs_optimized] = true if opts['ebs_optimized']
 

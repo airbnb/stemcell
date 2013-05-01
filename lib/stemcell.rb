@@ -20,7 +20,7 @@ module Stemcell
       end
 
       @ec2_url = "ec2.#{@region}.amazonaws.com"
-      @timeout = 120
+      @timeout = 300
       @start_time = Time.new
 
       AWS.config({:access_key_id => @aws_access_key, :secret_access_key => @aws_secret_key})

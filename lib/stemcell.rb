@@ -20,7 +20,7 @@ module Stemcell
       end
 
       @ec2_url = "ec2.#{@region}.amazonaws.com"
-      @timeout = 120
+      @timeout = 300
       @start_time = Time.new
 
       AWS.config({:access_key_id => @aws_access_key, :secret_access_key => @aws_secret_key})
@@ -71,6 +71,13 @@ module Stemcell
 
       # specify IAM role (optional)
       launch_options[:iam_instance_profile] = opts['iam_role'] if opts['iam_role']
+
+      # specify placement group (optional)
+      if opts['placement_group']
+        launch_options[:placement] = {
+          :group_name => opts['placement_group'],
+        }
+      end
 
       # specify an EBS-optimized instance (optional)
       launch_options[:ebs_optimized] = true if opts['ebs_optimized']

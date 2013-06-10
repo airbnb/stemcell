@@ -31,15 +31,29 @@ module Stemcell
         'git_origin',
       ])
 
-
       default_opts = {
-        'name' => Time.now.to_i.to_s,
         'template' => 'ubuntu-cloud',
         'count' => 1
       }
-      opts.reverse_merge!(default_opts)
+      opts = default_opts.merge(opts)
 
+      # Read options as paths or file contents
       opts['git_key'] = try_file(opts['git_key'])
+      opts['chef_data_bag_secret'] = try_file(opts['chef_data_bag_secret'])
+
+      image = create_image(opts)
+
+      opts['count'].times do
+        @image.start
+      end
+
+      wait(LXC.containers)
+    end
+
+    def create_image(opts)
+      image_name = generate_image_name(opts['chef_role'], opts)
+      @image = LXC::Container.new(image_name)
+      return true if @image.exists?
 
       # Render the bootstrap script and write to a temp file
       init_template = render_template('bootstrap.sh.erb', opts)
@@ -48,16 +62,19 @@ module Stemcell
       template_options = []
       template_options << "-u #{init_template_path}"
 
-      opts[:count].each do
-        container = LXC::Container.new(opts[:name])
-        container.create({
-          :template => opts[:template],
+      image.create({
+          :template => opts['template'],
           :template_options => template_options,
-          :config_file => opts[:config_file]
-        })
-      end
+          :config_file => opts['config_file']
+      })
+    end
 
-      wait(LXC.containers)
+    def destroy_image
+      @image.destroy
+    end
+
+    def generate_image_name(name, config)
+      "#{roles}-#{Digest::MD5.hexdigest(config.to_s)}"
     end
 
     def wait(instances)

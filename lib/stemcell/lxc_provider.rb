@@ -18,30 +18,35 @@ module Stemcell
 
       # Ubuntu's LXC requires sudo to do anything useful
       LXC.use_sudo = true
+
+      # If user already knows the image name, set it here
+      if opts['image_name']
+        image = LXC.container(opts['image_name'])
+        if image.exists?
+          @image = image
+        else
+          raise "No existing image with name #{opts['image_name']}"
+        end
+      end
     end
 
     def launch(opts={})
-      verify_required_options(opts,[
-        'count',
-        'chef_role',
-        'chef_environment',
-        'chef_data_bag_secret',
-        'git_branch',
-        'git_key',
-        'git_origin',
-      ])
+      opts['count'] = opts['count'] || 1
 
-      default_opts = {
-        'template' => 'ubuntu-cloud',
-        'count' => 1
-      }
-      opts = default_opts.merge(opts)
+      unless @image
+        verify_required_options(opts,[
+          'chef_role',
+          'chef_environment',
+          'chef_data_bag_secret',
+          'git_branch',
+          'git_key',
+          'git_origin',
+          'guest_key'
+        ])
 
-      # Read options as paths or file contents
-      opts['git_key'] = try_file(opts['git_key'])
-      opts['chef_data_bag_secret'] = try_file(opts['chef_data_bag_secret'])
-
-      image = create_image(opts)
+        # Create a new image or discover one with identical configuration
+        create_image(opts)
+      end
 
       opts['count'].times do
         @image.start

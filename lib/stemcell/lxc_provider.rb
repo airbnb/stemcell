@@ -1,3 +1,5 @@
+require 'digest/md5'
+
 require 'logger'
 require 'erb'
 require 'lxc'
@@ -70,7 +72,7 @@ module Stemcell
 
     def write_to_tmp(filename, content)
       # Hash by content to avoid needless duplicates
-      hash = Digest::MD5.digest(content)
+      hash = Digest::MD5.hexdigest(content)
       tmp_path = File.join('/tmp', "#{filename}-#{hash}")
 
       File.open(tmp_path, 'w') do |file|

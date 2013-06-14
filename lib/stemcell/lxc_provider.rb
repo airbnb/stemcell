@@ -18,14 +18,12 @@ module Stemcell
       @log.debug "creating new Stemcell object using LXC provider"
       @log.debug "opts are #{opts.inspect}"
 
-      raise 'LXC is not installed on this system' unless LXC.installed?
-
       # Ubuntu's LXC requires sudo to do anything useful
-      LXC.use_sudo = true
+      @lxc = LXC.new(:use_sudo => true)
 
       # If user already knows the image name, set it here
       if opts['image_name']
-        image = LXC.container(opts['image_name'])
+        image = @lxc.container(opts['image_name'])
         if image.exists?
           @image = image
         else
@@ -61,8 +59,8 @@ module Stemcell
 
     def create_image(opts)
       image_name = generate_image_name(opts['chef_role'], opts)
-      @image = LXC::Container.new(image_name)
       return true if @image.exists?
+      @image = LXC::Container.new(:lxc=> @lxc, :name => image_name)
 
       # Read options as paths or file contents
       opts['git_key'] = try_file(opts['git_key'])
@@ -113,7 +111,9 @@ module Stemcell
     end
 
     def find_instance(name)
-      LXC.containers(name)[0]
+      @lxc.containers.select {|c| c.name == name}[0]
+    end
+
     def instances
       @lxc.containers.select {|c| c.running?}
     end

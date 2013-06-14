@@ -3,197 +3,235 @@
 # -*- mode: shell -*- 
 
 require 'stemcell'
-
 require 'trollop'
 
-options = Trollop::options do
-  version "stemcell #{Stemcell::VERSION} (c) 2013 Airbnb"
-  banner  "Stemcell: get ready to rock"
+def main
+  options = Trollop::options do
+    version "stemcell #{Stemcell::VERSION} (c) 2013 Airbnb"
+    banner  "Stemcell: get ready to rock"
 
-  opt('aws_access_key',
-      "aws access key",
-      :type => String,
-      :default => ENV['AWS_ACCESS_KEY']
-      )
+    opt('instance_provider',
+        "Provider of this instance (ec2 | lxc | vagrant)",
+        :type => String,
+        :default => 'ec2'
+       )
 
-  opt('aws_secret_key',
-      "aws secret key",
-      :type => String,
-      :default => ENV['AWS_SECRET_KEY']
-      )
+    opt('aws_access_key',
+        "aws access key (ec2 only)",
+        :type => String,
+        :default => ENV['AWS_ACCESS_KEY']
+        )
 
-  opt('region',
-      'ec2 region to launch in',
-      :type => String,
-      :default => ENV['REGION'] ? ENV['REGION'] : 'us-east-1'
-      )
+    opt('aws_secret_key',
+        "aws secret key (ec2 only)",
+        :type => String,
+        :default => ENV['AWS_SECRET_KEY']
+        )
 
-  opt('instance_type',
-      'machine type to launch',
-      :type => String,
-      :default => ENV['INSTANCE_TYPE'] ? ENV['INSTANCE_TYPE'] : 'm1.small'
-      )
+    opt('region',
+        'ec2 region to launch in (ec2 only)',
+        :type => String,
+        :default => ENV['REGION'] ? ENV['REGION'] : 'us-east-1'
+        )
 
-  opt('image_id',
-      'ami to use for launch',
-      :type => String,
-      :default => ENV['IMAGE_ID'] ? ENV['IMAGE_ID'] : 'ami-d726abbe'
-      )
+    opt('instance_type',
+        'machine type to launch (ec2 only)',
+        :type => String,
+        :default => ENV['INSTANCE_TYPE'] ? ENV['INSTANCE_TYPE'] : 'm1.small'
+        )
 
-  opt('security_groups',
-      'comma-separated list of security groups to launch instance with',
-      :type => String,
-      :default => ENV['SECURITY_GROUPS'] ? ENV['SECURITY_GROUPS'] : 'default'
-      )
+    opt('image_id',
+        'ami to use for launch (ec2 only)',
+        :type => String,
+        :default => ENV['IMAGE_ID'] ? ENV['IMAGE_ID'] : 'ami-d726abbe'
+        )
 
-  opt('availability_zone',
-      'zone in which to launch instances',
-      :type => String,
-      :default => ENV['AVAILABILITY_ZONE']
-      )
+    opt('security_groups',
+        'comma-separated list of security groups to launch instance with (ec2 only)',
+        :type => String,
+        :default => ENV['SECURITY_GROUPS'] ? ENV['SECURITY_GROUPS'] : 'default'
+        )
 
-  opt('tags',
-      'comma-separated list of key=value pairs to apply',
-      :type => String,
-      :default => ENV['TAGS']
-      )
+    opt('availability_zone',
+        'zone in which to launch instances (ec2 only)',
+        :type => String,
+        :default => ENV['AVAILABILITY_ZONE']
+        )
 
-  opt('key_name',
-      'aws ssh key name for the ubuntu user',
-      :type => String,
-      :default => ENV['KEY_NAME']
-      )
+    opt('tags',
+        'comma-separated list of key=value pairs to apply (ec2 only)',
+        :type => String,
+        :default => ENV['TAGS']
+        )
 
-  opt('iam_role',
-      'IAM role to associate with the instance',
-      :type => String,
-      :default => ENV['IAM_ROLE']
-      )
+    opt('key_name',
+        'aws ssh key name for the ubuntu user (ec2 only)',
+        :type => String,
+        :default => ENV['KEY_NAME']
+        )
 
-  opt('placement_group',
-      'Placement group to associate with the instance',
-      :type => String,
-      :default => ENV['PLACEMENT_GROUP']
-      )
+    opt('iam_role',
+        'IAM role to associate with the instance (ec2 only)',
+        :type => String,
+        :default => ENV['IAM_ROLE']
+        )
 
-  opt('ebs_optimized',
-      'launch an EBS-Optimized instance',
-      :type => :flag
-      )
+    opt('placement_group',
+        'Placement group to associate with the instance (ec2 only)',
+        :type => String,
+        :default => ENV['PLACEMENT_GROUP']
+        )
 
-  opt('ephemeral_devices',
-      'comma-separated list of block devices to map ephemeral devices to',
-      :type => String,
-      :default => ENV['EPHEMERAL_DEVICES']
-      )
+    opt('ebs_optimized',
+        'launch an EBS-Optimized instance (ec2 only)',
+        :type => :flag
+        )
 
-  opt('chef_data_bag_secret',
-      'path to secret file (or the string containing the secret)',
-      :type => String,
-      :default => ENV['CHEF_DATA_BAG_SECRET']
-      )
+    opt('ephemeral_devices',
+        'comma-separated list of block devices to map ephemeral devices to (ec2 only)',
+        :type => String,
+        :default => ENV['EPHEMERAL_DEVICES']
+        )
 
-  opt('chef_role',
-      'chef role of instance to be launched',
-      :type => String,
-      :default => ENV['CHEF_ROLE']
-      )
+    opt('chef_data_bag_secret',
+        'path to secret file (or the string containing the secret)',
+        :type => String,
+        :default => ENV['CHEF_DATA_BAG_SECRET']
+        )
 
-  opt('chef_environment',
-      'chef environment in which this instance will run',
-      :type => String,
-      :default => ENV['CHEF_ENVIRONMENT']
-      )
+    opt('chef_role',
+        'chef role of instance to be launched',
+        :type => String,
+        :default => ENV['CHEF_ROLE']
+        )
 
-  opt('git_origin',
-      'git origin to use',
-      :type => String,
-      :default => ENV['GIT_ORIGIN']
-      )
+    opt('chef_environment',
+        'chef environment in which this instance will run',
+        :type => String,
+        :default => ENV['CHEF_ENVIRONMENT']
+        )
 
-  opt('git_branch',
-      'git branch to run off',
-      :type => String,
-      :default => ENV['GIT_BRANCH'] ? ENV['GIT_BRANCH'] : 'production'
-      )
+    opt('git_origin',
+        'git origin to use',
+        :type => String,
+        :default => ENV['GIT_ORIGIN']
+        )
 
-  opt('git_key',
-      'path to the git repo deploy key (or the string containing the key)',
-      :type => String,
-      :default => ENV['GIT_KEY']
-      )
+    opt('git_branch',
+        'git branch to run off',
+        :type => String,
+        :default => ENV['GIT_BRANCH'] ? ENV['GIT_BRANCH'] : 'production'
+        )
 
-  opt('count',
-      'number of instances to launch',
-      :type => Integer,
-      :default => ENV['COUNT'] ? ENV['COUNT'] : 1
-      )
+    opt('git_key',
+        'path to the git repo deploy key (or the string containing the key)',
+        :type => String,
+        :default => ENV['GIT_KEY']
+        )
 
-end
+    opt('count',
+        'number of instances to launch',
+        :type => Integer,
+        :default => ENV['COUNT'] ? ENV['COUNT'] : 1
+        )
 
-required_parameters = [
-                       'aws_access_key',
-                       'aws_secret_key',
-                       'chef_role',
-                       'chef_environment',
-                       'chef_data_bag_secret',
-                       'git_branch',
-                       'git_key',
-                       'git_origin',
-                       'key_name',
-                      ]
+  end
 
-required_parameters.each do |arg|
-  raise ArgumentError, "--#{arg.gsub('_','-')} needs to be specified on the commandline or set \
-by the #{arg.upcase.gsub('-','_')} environment variable" if
-    options[arg].nil? or ! options[arg]
-end
+  # Verify common parameters
+  verify_parameters(options, [
+     'chef_role',
+     'chef_environment',
+     'chef_data_bag_secret',
+     'git_branch',
+     'git_key',
+     'git_origin',
+  ])
 
-
-# convert tags from string to ruby hash
-tags = {}
-if options['tags']
-  options['tags'].split(',').each do |tag_set|
-    key, value = tag_set.split('=')
-    tags[key] = value
+  case options['instance_provider']
+  when 'ec2' then launch_ec2(options)
+  when 'lxc' then launch_lxc(options)
   end
 end
-options['tags'] = tags
 
 
-# convert security_groups from comma seperated string to ruby array
-options['security_groups'] = options['security_groups'].split(',')
+def launch_lxc(options)
+  stemcell = Stemcell::LXCProvider.new
+  stemcell.launch({
+    'count' => options['count'],
+    'chef_role' => options['chef_role'],
+    'chef_environment' => options['chef_environment'],
+    'chef_data_bag_secret' => options['chef_data_bag_secret'],
+    'git_branch' => options['git_branch'],
+    'git_key' => options['git_key'],
+    'git_origin' => options['git_origin']
+  })
+end
 
 
-# convert ephemeral_devices from comma separated string to ruby array
-options['ephemeral_devices'] = options['ephemeral_devices'].split(',') if options['ephemeral_devices']
+def launch_ec2(options)
+  # Verify EC2-specific parameters
+  verify_parameters(options, [
+     'aws_access_key',
+     'aws_secret_key',
+     'key_name',
+  ])
+
+  # convert tags from string to ruby hash
+  tags = {}
+  if options['tags']
+    options['tags'].split(',').each do |tag_set|
+      key, value = tag_set.split('=')
+      tags[key] = value
+    end
+  end
+  options['tags'] = tags
 
 
-# create stemcell object
-stemcell = Stemcell::Stemcell.new({
-  'aws_access_key' => options['aws_access_key'],
-  'aws_secret_key' => options['aws_secret_key'],
-  'region'         => options['region'],
-})
+  # convert security_groups from comma seperated string to ruby array
+  options['security_groups'] = options['security_groups'].split(',')
 
 
-# launch instance(s)
-stemcell.launch({
-  'availability_zone'    => options['availability_zone'],
-  'instance_type'        => options['instance_type'],
-  'image_id'             => options['image_id'],
-  'security_groups'      => options['security_groups'],
-  'chef_role'            => options['chef_role'],
-  'chef_environment'     => options['chef_environment'],
-  'chef_data_bag_secret' => options['chef_data_bag_secret'],
-  'git_branch'           => options['git_branch'],
-  'git_key'              => options['git_key'],
-  'git_origin'           => options['git_origin'],
-  'key_name'             => options['key_name'],
-  'tags'                 => options['tags'],
-  'count'                => options['count'],
-  'iam_role'             => options['iam_role'],
-  'ebs_optimized'        => options['ebs_optimized'],
-  'ephemeral_devices'    => options['ephemeral_devices'],
-  'placement_group'      => options['placement_group'],
-})
+  # convert ephemeral_devices from comma separated string to ruby array
+  options['ephemeral_devices'] = options['ephemeral_devices'].split(',') if options['ephemeral_devices']
+
+
+  # create stemcell object
+  stemcell = Stemcell::Stemcell.new({
+    'aws_access_key' => options['aws_access_key'],
+    'aws_secret_key' => options['aws_secret_key'],
+    'region'         => options['region'],
+  })
+
+
+  # launch instance(s)
+  stemcell.launch({
+    'availability_zone'    => options['availability_zone'],
+    'instance_type'        => options['instance_type'],
+    'image_id'             => options['image_id'],
+    'security_groups'      => options['security_groups'],
+    'chef_role'            => options['chef_role'],
+    'chef_environment'     => options['chef_environment'],
+    'chef_data_bag_secret' => options['chef_data_bag_secret'],
+    'git_branch'           => options['git_branch'],
+    'git_key'              => options['git_key'],
+    'git_origin'           => options['git_origin'],
+    'key_name'             => options['key_name'],
+    'tags'                 => options['tags'],
+    'count'                => options['count'],
+    'iam_role'             => options['iam_role'],
+    'ebs_optimized'        => options['ebs_optimized'],
+    'ephemeral_devices'    => options['ephemeral_devices'],
+    'placement_group'      => options['placement_group'],
+  })
+end
+
+def verify_parameters(options, required_parameters)
+  required_parameters.each do |arg|
+    raise ArgumentError, "--#{arg.gsub('_','-')} needs to be specified on the commandline or set \
+  by the #{arg.upcase.gsub('-','_')} environment variable" if
+      options[arg].nil? or ! options[arg]
+  end
+end
+
+# Run the main function
+main

@@ -200,7 +200,9 @@ mkdir -p ${chef_dir}
 update
 install curl
 install git
+<% if opts['instance_provider'] == 'ec2' %>
 get_instance_id
+<% end %>
 install_chef
 update_repo
 configure_chef

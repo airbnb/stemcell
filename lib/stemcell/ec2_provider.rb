@@ -1,0 +1,182 @@
+require 'logger'
+require 'erb'
+require 'aws-sdk'
+
+require 'stemcell/provider'
+
+module Stemcell
+  class EC2Provider < Provider
+    def initialize(opts={})
+      @log = Logger.new(STDOUT)
+      @log.level = Logger::INFO unless ENV['DEBUG']
+      @log.debug "creating new Stemcell object using EC2 provider"
+      @log.debug "opts are #{opts.inspect}"
+      ['aws_access_key',
+       'aws_secret_key',
+       'region',
+      ].each do |req|
+        raise ArgumentError, "missing required param #{req}" unless opts[req]
+        instance_variable_set("@#{req}",opts[req])
+      end
+
+      @ec2_url = "ec2.#{@region}.amazonaws.com"
+      @timeout = 300
+      @start_time = Time.new
+
+      AWS.config({:access_key_id => @aws_access_key, :secret_access_key => @aws_secret_key})
+      @ec2 = AWS::EC2.new(:ec2_endpoint => @ec2_url)
+    end
+
+
+    def launch(opts={})
+      verify_required_options(opts,[
+        'image_id',
+        'security_groups',
+        'key_name',
+        'count',
+        'chef_role',
+        'chef_environment',
+        'chef_data_bag_secret',
+        'git_branch',
+        'git_key',
+        'git_origin',
+        'instance_type',
+      ])
+
+      # attempt to accept keys as file paths
+      opts['git_key'] = try_file(opts['git_key'])
+      opts['chef_data_bag_secret'] = try_file(opts['chef_data_bag_secret'])
+
+      # generate tags and merge in any that were specefied as inputs
+      tags = {
+        'Name' => "#{opts['chef_role']}-#{opts['chef_environment']}",
+        'Group' => "#{opts['chef_role']}-#{opts['chef_environment']}",
+        'created_by' => ENV['USER'],
+        'stemcell' => VERSION,
+      }
+      tags.merge!(opts['tags']) if opts['tags']
+
+      # generate launch options
+      launch_options = {
+        :image_id => opts['image_id'],
+        :security_groups => opts['security_groups'],
+        :user_data => opts['user_data'],
+        :instance_type => opts['instance_type'],
+        :key_name => opts['key_name'],
+        :count => opts['count'],
+      }
+
+      # specify availability zone (optional)
+      launch_options[:availability_zone] = opts['availability_zone'] if opts['availability_zone']
+
+      # specify IAM role (optional)
+      launch_options[:iam_instance_profile] = opts['iam_role'] if opts['iam_role']
+
+      # specify placement group (optional)
+      if opts['placement_group']
+        launch_options[:placement] = {
+          :group_name => opts['placement_group'],
+        }
+      end
+
+      # specify an EBS-optimized instance (optional)
+      launch_options[:ebs_optimized] = true if opts['ebs_optimized']
+
+      # specify block device mappings (optional)
+      if opts['ephemeral_devices']
+        launch_options[:block_device_mappings] = opts['ephemeral_devices'].each_with_index.map do |device,i|
+          {
+            :device_name => device,
+            :virtual_name => "ephemeral#{i}"
+          }
+        end
+      end
+
+      # Specify the type of instance. Affects the bootstrap.sh template
+      # TODO: This is a hack. Shouldn't put random stuff into opts object
+      opts['instance_provider'] = 'ec2'
+
+      # generate user data script to bootstrap instance, include in launch optsions
+      launch_options[:user_data] = render_template('bootstrap.sh.erb', opts)
+
+      # launch instances
+      instances = do_launch(launch_options)
+
+      # wait for aws to report instance stats
+      wait(instances)
+
+      # set tags on all instances launched
+      set_tags(instances, tags)
+
+      print_run_info(instances)
+      @log.info "launched instances successfully"
+      return instances
+    end
+
+    def find_instance(id)
+      return @ec2.instances[id]
+    end
+
+    def kill(instances,opts={})
+      return if instances.nil?
+      instances.each do |i|
+        begin
+          instance = find_instance(i)
+          @log.warn "Terminating instance #{instance.instance_id}"
+          instance.terminate
+        rescue AWS::EC2::Errors::InvalidInstanceID::NotFound => e
+          throw e unless opts[:ignore_not_found]
+        end
+      end
+    end
+
+    private
+
+    def print_run_info(instances)
+      puts "here is the info for what's launched:"
+      instances.each do |instance|
+        puts "\tinstance_id: #{instance.instance_id}"
+        puts "\tpublic ip:   #{instance.public_ip_address}"
+        puts
+      end
+      puts "install logs will be in /var/log/init and /var/log/init.err"
+    end
+
+    def wait(instances)
+      @log.info "Waiting up to #{@timeout} seconds for #{instances.count} instances (#{instances.inspect}):"
+
+      while true
+        sleep 5
+        if Time.now - @start_time > @timeout
+          kill(instances)
+          raise TimeoutError, "exceded timeout of #{@timeout}"
+        end
+
+        if instances.select{|i| i.status != :running }.empty?
+          break
+        end
+      end
+
+      @log.info "all instances in running state"
+    end
+
+    def do_launch(opts={})
+      @log.debug "about to launch instance(s) with options #{opts}"
+      @log.info "launching instances"
+      instances = @ec2.instances.create(opts)
+      instances = [instances] unless Array === instances
+      instances.each do |instance|
+        @log.info "launched instance #{instance.instance_id}"
+      end
+      return instances
+    end
+
+    def set_tags(instances=[],tags)
+      @log.info "setting tags on instance(s)"
+      instances.each do |instance|
+        instance.tags.set(tags)
+      end
+    end
+
+  end
+end

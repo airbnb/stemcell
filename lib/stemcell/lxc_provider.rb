@@ -55,11 +55,21 @@ module Stemcell
         create_image(opts)
       end
 
+      # Keep track of containers already running to compare after launching
+      existing = {}
+      @lxc.containers.each do |c|
+        existing[c.name] = true
+      end
+
       opts['count'].times do
         @image.start
       end
 
-      wait(LXC.containers)
+      # Identify the containers that were not previously existing and wait on them to start
+      launched = @lxc.containers.select {|c| existing[c.name].nil?}
+      wait(launched)
+
+      launched
     end
 
     def create_image(opts)

@@ -10,6 +10,8 @@ require 'stemcell/provider'
 
 module Stemcell
   class LXCProvider < Provider
+    attr_reader :image
+
     def initialize(opts={})
       @log = Logger.new(STDOUT)
       @log.level = Logger::INFO unless ENV['DEBUG']

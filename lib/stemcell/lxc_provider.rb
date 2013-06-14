@@ -1,28 +1,28 @@
 require 'digest/md5'
-require 'base64'
 
 require 'logger'
 require 'erb'
 require 'lxc'
+require 'posix/spawn'
 
 require 'stemcell/provider'
 
 module Stemcell
   class LXCProvider < Provider
-    attr_reader :image
-
     def initialize(opts={})
       @log = Logger.new(STDOUT)
       @log.level = Logger::INFO unless ENV['DEBUG']
       @log.debug "creating new Stemcell object using LXC provider"
       @log.debug "opts are #{opts.inspect}"
 
+      raise 'LXC is not installed on this system' unless LXC.installed?
+
       # Ubuntu's LXC requires sudo to do anything useful
-      @lxc = LXC.new(:use_sudo => true)
+      LXC.use_sudo = true
 
       # If user already knows the image name, set it here
       if opts['image_name']
-        image = @lxc.container(opts['image_name'])
+        image = LXC.container(opts['image_name'])
         if image.exists?
           @image = image
         else
@@ -33,7 +33,6 @@ module Stemcell
 
     def launch(opts={})
       opts['count'] = opts['count'] || 1
-      verify_required_options(opts, ['guest_key'])
 
       unless @image
         verify_required_options(opts,[
@@ -43,12 +42,8 @@ module Stemcell
           'git_branch',
           'git_key',
           'git_origin',
-          'guest_public_key'
+          'guest_key'
         ])
-
-        # Specify the type of instance. Affects the bootstrap.sh template
-        # TODO: This is a hack. Shouldn't put random stuff into opts object
-        opts['instance_provider'] = 'lxc'
 
         # Create a new image or discover one with identical configuration
         create_image(opts)
@@ -63,12 +58,12 @@ module Stemcell
 
     def create_image(opts)
       image_name = generate_image_name(opts['chef_role'], opts)
-      @image = LXC::Container.new(:lxc=> @lxc, :name => image_name)
-      return @image if @image.exists?
+      @image = LXC::Container.new(image_name)
+      return true if @image.exists?
 
       # Read options as paths or file contents
       opts['git_key'] = try_file(opts['git_key'])
-      opts['guest_public_key'] = try_file(opts['guest_public_key'])
+      opts['guest_key'] = try_file(opts['guest_key'])
       opts['chef_data_bag_secret'] = try_file(opts['chef_data_bag_secret'])
 
       # Render the bootstrap scripts and write to a tmp
@@ -79,26 +74,24 @@ module Stemcell
       user_script_path = write_to_tmp('bootstrap.sh', user_script)
 
       # Combine cloud config and user data using Ubuntu's built-in tool
-      cloud_init = write_mime_multipart({
-                            :cloud_config => cloud_config_path,
-                            :user_data => user_script_path
-                          })
-      cloud_init_path = write_to_tmp('cloud-init', cloud_init)
+      cloud_init_path = write_mime_multipart('/tmp/cloud_init', cloud_config_path, user_script_path)
 
       template_options = []
       template_options << "-u #{cloud_init_path}"
 
-      @image if @image.create("-t ubuntu-cloud", "--", template_options)
+      image.create({
+          :template => opts['template'],
+          :template_options => template_options,
+          :config_file => opts['config_file']
+      })
     end
 
     def destroy_image
       @image.destroy
     end
 
-    def generate_image_name(role, config)
-      # Hash the config, base64 encode to shorten. Remove 
-      hash = Base64.urlsafe_encode64(Digest::MD5.digest(config.to_s)).chomp("==")
-      "#{role}-#{hash}"
+    def generate_image_name(name, config)
+      "#{roles}-#{Digest::MD5.hexdigest(config.to_s)}"
     end
 
     def wait(instances)
@@ -107,19 +100,8 @@ module Stemcell
       end
     end
 
-    def get_instance_ip(name)
-      # Find the IP from the DHCP leases given out by dnsmasq
-      cmd = "grep #{name} /var/lib/misc/dnsmasq.leases | awk '{print $3}'"
-      child = POSIX::Spawn::Child.new(cmd.strip)
-      child.out.strip
-    end
-
     def find_instance(name)
-      @lxc.containers.select {|c| c.name == name}[0]
-    end
-
-    def instances
-      @lxc.containers.select {|c| c.running?}
+      LXC.containers(name)[0]
     end
 
     private

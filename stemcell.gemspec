@@ -18,6 +18,7 @@ Gem::Specification.new do |gem|
   gem.require_paths = ["lib"]
   gem.add_runtime_dependency 'trollop', '~> 2.0'
   gem.add_runtime_dependency 'aws-sdk', '~> 1.9'
-  gem.add_runtime_dependency 'lxc-ruby', '~> 0.3.0'
+  gem.add_runtime_dependency 'lxc', '~> 0.2.10'
+  gem.add_runtime_dependency 'posix-spawn', '~> 0.3.6'
 end
 

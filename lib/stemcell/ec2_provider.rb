@@ -92,6 +92,10 @@ module Stemcell
         end
       end
 
+      # Specify the type of instance. Affects the bootstrap.sh template
+      # TODO: This is a hack. Shouldn't put random stuff into opts object
+      opts['instance_provider'] = 'ec2'
+
       # generate user data script to bootstrap instance, include in launch optsions
       launch_options[:user_data] = render_template('bootstrap.sh.erb', opts)
 

@@ -47,6 +47,10 @@ module Stemcell
           'guest_public_key'
         ])
 
+        # Specify the type of instance. Affects the bootstrap.sh template
+        # TODO: This is a hack. Shouldn't put random stuff into opts object
+        opts['instance_provider'] = 'lxc'
+
         # Create a new image or discover one with identical configuration
         create_image(opts)
       end

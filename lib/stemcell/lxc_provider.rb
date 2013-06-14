@@ -34,6 +34,7 @@ module Stemcell
 
     def launch(opts={})
       opts['count'] = opts['count'] || 1
+      verify_required_options(opts, ['guest_key'])
 
       unless @image
         verify_required_options(opts,[
@@ -43,7 +44,7 @@ module Stemcell
           'git_branch',
           'git_key',
           'git_origin',
-          'guest_key'
+          'guest_public_key'
         ])
 
         # Create a new image or discover one with identical configuration
@@ -64,7 +65,7 @@ module Stemcell
 
       # Read options as paths or file contents
       opts['git_key'] = try_file(opts['git_key'])
-      opts['guest_key'] = try_file(opts['guest_key'])
+      opts['guest_public_key'] = try_file(opts['guest_public_key'])
       opts['chef_data_bag_secret'] = try_file(opts['chef_data_bag_secret'])
 
       # Render the bootstrap scripts and write to a tmp

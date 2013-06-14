@@ -59,8 +59,8 @@ module Stemcell
 
     def create_image(opts)
       image_name = generate_image_name(opts['chef_role'], opts)
-      return true if @image.exists?
       @image = LXC::Container.new(:lxc=> @lxc, :name => image_name)
+      return @image if @image.exists?
 
       # Read options as paths or file contents
       opts['git_key'] = try_file(opts['git_key'])
@@ -80,11 +80,7 @@ module Stemcell
       template_options = []
       template_options << "-u #{cloud_init_path}"
 
-      image.create({
-          :template => opts['template'],
-          :template_options => template_options,
-          :config_file => opts['config_file']
-      })
+      @image if @image.create("-t ubuntu-cloud", "--", template_options)
     end
 
     def destroy_image

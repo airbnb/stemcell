@@ -103,6 +103,13 @@ module Stemcell
       end
     end
 
+    def get_instance_ip(name)
+      # Find the IP from the DHCP leases given out by dnsmasq
+      cmd = "grep #{name} /var/lib/misc/dnsmasq.leases | awk '{print $3}'"
+      child = POSIX::Spawn::Child.new(cmd.strip)
+      child.out.strip
+    end
+
     def find_instance(name)
       LXC.containers(name)[0]
     end

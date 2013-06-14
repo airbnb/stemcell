@@ -112,6 +112,8 @@ module Stemcell
 
     def find_instance(name)
       LXC.containers(name)[0]
+    def instances
+      @lxc.containers.select {|c| c.running?}
     end
 
     private

@@ -61,8 +61,14 @@ module Stemcell
         existing[c.name] = true
       end
 
+      # LXC gem doesn't play well with start-ephemeral. Spawn own processes for now
+      command = "sudo lxc-start-ephemeral -d "
+      command << "-o #{@image.name} "
+      command << "-S #{opts['guest_key']}"
+
       opts['count'].times do
-        @image.start
+        pid = POSIX::Spawn::spawn(command, :in => "/dev/null", :out => "/dev/null")
+        sleep 0.125
       end
 
       # Identify the containers that were not previously existing and wait on them to start

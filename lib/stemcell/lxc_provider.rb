@@ -1,4 +1,5 @@
 require 'digest/md5'
+require 'base64'
 
 require 'logger'
 require 'erb'
@@ -90,8 +91,10 @@ module Stemcell
       @image.destroy
     end
 
-    def generate_image_name(name, config)
-      "#{roles}-#{Digest::MD5.hexdigest(config.to_s)}"
+    def generate_image_name(role, config)
+      # Hash the config, base64 encode to shorten. Remove 
+      hash = Base64.urlsafe_encode64(Digest::MD5.digest(config.to_s)).chomp("==")
+      "#{role}-#{hash}"
     end
 
     def wait(instances)

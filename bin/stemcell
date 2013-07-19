@@ -43,7 +43,7 @@ options = Trollop::options do
   opt('security_groups',
       'comma-separated list of security groups to launch instance with',
       :type => String,
-      :default => ENV['SECURITY_GROUPS'] ? ENV['SECURITY_GROUPS'] : 'default'
+      :default => ENV['SECURITY_GROUPS'] ? ENV['SECURITY_GROUPS'] : 'internal'
       )
 
   opt('availability_zone',

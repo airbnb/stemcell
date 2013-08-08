@@ -8,6 +8,109 @@ module Stemcell
     attr_reader :version
     attr_reader :banner
 
+    OPTION_DEFINITIONS = [
+      { :name => 'aws_access_key',
+        :desc => "aws access key",
+        :type => String,
+        :env =>  'AWS_ACCESS_KEY'
+      },
+      { :name => 'aws_secret_key',
+        :desc => "aws secret key",
+        :type => String,
+        :env  => 'AWS_SECRET_KEY'
+      },
+      { :name => 'region',
+        :desc => "ec2 region to launch in",
+        :type => String,
+        :env  => 'REGION'
+      },
+      { :name => 'instance_type',
+        :desc => "machine type to launch",
+        :type => String,
+        :env  => 'INSTANCE_TYPE'
+      },
+      { :name => 'image_id',
+        :desc => "ami to use for launch",
+        :type => String,
+        :env  => 'IMAGE_ID'
+      },
+      { :name => 'security_groups',
+        :desc => "comma-separated list of security groups to launch instance with",
+        :type => String,
+        :env  => 'SECURITY_GROUPS'
+      },
+      { :name => 'availability_zone',
+        :desc => "zone in which to launch instances",
+        :type => String,
+        :env  => 'AVAILABILITY_ZONE'
+      },
+      { :name => 'tags',
+        :desc => "comma-separated list of key=value pairs to apply",
+        :type => String,
+        :env => 'TAGS'
+      },
+      { :name => 'key_name',
+        :desc => "aws ssh key name for the ubuntu user",
+        :type => String,
+        :env  => 'KEY_NAME'
+      },
+      { :name => 'iam_role',
+        :desc => "IAM role to associate with the instance",
+        :type => String,
+        :env  => 'IAM_ROLE'
+      },
+      { :name => 'placement_group',
+        :desc => "Placement group to associate with the instance",
+        :type => String,
+        :env  => 'PLACEMENT_GROUP'
+      },
+      { :name => 'ebs_optimized',
+        :desc => "launch an EBS-Optimized instance",
+        :type => String,
+        :env  => 'EBS_OPTIMIZED'
+      },
+      { :name => 'ephemeral_devices',
+        :desc => "comma-separated list of block devices to map ephemeral devices to",
+        :type => String,
+        :env  => 'EPHEMERAL_DEVICES'
+      },
+      { :name => 'chef_data_bag_secret',
+        :desc => "path to secret file (or the string containing the secret)",
+        :type => String,
+        :env =>  'CHEF_DATA_BAG_SECRET'
+      },
+      { :name => 'chef_role',
+        :desc => "chef role of instance to be launched",
+        :type => String,
+        :env  => 'CHEF_ROLE'
+      },
+      { :name => 'chef_environment',
+        :desc => "chef environment in which this instance will run",
+        :type => String,
+        :env  => 'CHEF_ENVIRONMENT'
+      },
+      { :name => 'git_origin',
+        :desc => "git origin to use",
+        :type => String,
+        :env  => 'GIT_ORIGIN'
+      },
+      { :name => 'git_branch',
+        :desc => "git branch to run off",
+        :type => String,
+        :env  => 'GIT_BRANCH'
+      },
+      { :name => 'git_key',
+        :desc => "path to the git repo deploy key (or the string containing the key)",
+        :type => String,
+        :env  => 'GIT_KEY'
+      },
+      { :name => 'count',
+        :desc => "number of instances to launch",
+        :type => Integer,
+        :env =>  'COUNT'
+      }
+    ]
+
     def initialize(config={})
       @defaults = config[:defaults] || {}
       @version = config[:version]
@@ -19,129 +122,17 @@ module Stemcell
       # trollop parser itself, it doesn't have access to the this instance.
       # So use a value that can be captured instead!
       _this = self
+      _defns = OPTION_DEFINITIONS
 
       @options = Trollop::options do
         version _this.version if _this.version
         banner  _this.banner  if _this.banner
 
-        opt('aws_access_key',
-            "aws access key",
-            :type => String,
-            :default => ENV['AWS_ACCESS_KEY']
-            )
-
-        opt('aws_secret_key',
-            "aws secret key",
-            :type => String,
-            :default => ENV['AWS_SECRET_KEY']
-            )
-
-        opt('region',
-            'ec2 region to launch in',
-            :type => String,
-            :default => ENV['REGION'] || _this.defaults['region']
-            )
-
-        opt('instance_type',
-            'machine type to launch',
-            :type => String,
-            :default => ENV['INSTANCE_TYPE'] || _this.defaults['instance_type']
-            )
-
-        opt('image_id',
-            'ami to use for launch',
-            :type => String,
-            :default => ENV['IMAGE_ID'] || _this.defaults['image_id']
-            )
-
-        opt('security_groups',
-            'comma-separated list of security groups to launch instance with',
-            :type => String,
-            :default => ENV['SECURITY_GROUPS'] || _this.defaults['security_groups']
-            )
-
-        opt('availability_zone',
-            'zone in which to launch instances',
-            :type => String,
-            :default => ENV['AVAILABILITY_ZONE']
-            )
-
-        opt('tags',
-            'comma-separated list of key=value pairs to apply',
-            :type => String,
-            :default => ENV['TAGS']
-            )
-
-        opt('key_name',
-            'aws ssh key name for the ubuntu user',
-            :type => String,
-            :default => ENV['KEY_NAME']
-            )
-
-        opt('iam_role',
-            'IAM role to associate with the instance',
-            :type => String,
-            :default => ENV['IAM_ROLE']
-            )
-
-        opt('placement_group',
-            'Placement group to associate with the instance',
-            :type => String,
-            :default => ENV['PLACEMENT_GROUP']
-            )
-
-        opt('ebs_optimized',
-            'launch an EBS-Optimized instance',
-            :type => :flag
-            )
-
-        opt('ephemeral_devices',
-            'comma-separated list of block devices to map ephemeral devices to',
-            :type => String,
-            :default => ENV['EPHEMERAL_DEVICES']
-            )
-
-        opt('chef_data_bag_secret',
-            'path to secret file (or the string containing the secret)',
-            :type => String,
-            :default => ENV['CHEF_DATA_BAG_SECRET']
-            )
-
-        opt('chef_role',
-            'chef role of instance to be launched',
-            :type => String,
-            :default => ENV['CHEF_ROLE']
-            )
-
-        opt('chef_environment',
-            'chef environment in which this instance will run',
-            :type => String,
-            :default => ENV['CHEF_ENVIRONMENT']
-            )
-
-        opt('git_origin',
-            'git origin to use',
-            :type => String,
-            :default => ENV['GIT_ORIGIN']
-            )
-
-        opt('git_branch',
-            'git branch to run off',
-            :type => String,
-            :default => ENV['GIT_BRANCH'] || _this.defaults['git_branch']
-            )
-
-        opt('git_key',
-            'path to the git repo deploy key (or the string containing the key)',
-            :type => String,
-            :default => ENV['GIT_KEY']
-            )
-
-        opt('count',
-            'number of instances to launch',
-            :type => Integer,
-            :default => ENV['COUNT'] || _this.defaults[:count]
-            )
+        _defns.each do |defn|
+          # Prioritize the environment variable, then the given default
+          default = ENV[defn[:env]] || _this.defaults[defn[:name]]
+          opt(defn[:name], defn[:desc], :type => defn[:type], :default => default)
+        end
       end
 
       # convert tags from string to ruby hash

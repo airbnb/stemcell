@@ -155,7 +155,7 @@ module Stemcell
       options['tags'] = tags
 
       # convert security_groups from comma seperated string to ruby array
-      options['security_groups'] = options['security_groups'].split(',')
+      options['security_groups'] &&= options['security_groups'].split(',')
 
       # convert ephemeral_devices from comma separated string to ruby array
       options['ephemeral_devices'] &&= options['ephemeral_devices'].split(',')

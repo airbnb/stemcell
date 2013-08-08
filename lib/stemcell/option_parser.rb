@@ -136,14 +136,14 @@ module Stemcell
       end
 
       # convert tags from string to ruby hash
-      tags = {}
       if options['tags']
+        tags = {}
         options['tags'].split(',').each do |tag_set|
           key, value = tag_set.split('=')
           tags[key] = value
         end
+        options['tags'] = tags
       end
-      options['tags'] = tags
 
       # convert security_groups from comma seperated string to ruby array
       options['security_groups'] &&= options['security_groups'].split(',')

@@ -13,12 +13,31 @@ DEFAULT_OPTIONS = {
   :count           => 1
 }
 
+REQUIRED_PARAMETERS = [
+  'aws_access_key',
+  'aws_secret_key',
+  'chef_role',
+  'chef_environment',
+  'chef_data_bag_secret',
+  'git_branch',
+  'git_key',
+  'git_origin',
+  'key_name',
+]
+
 # parse options from the command line and environment
 options = Stemcell::OptionParser.new({
   :defaults => DEFAULT_OPTIONS,
   :version  => "stemcell #{Stemcell::VERSION} (c) 2013 Airbnb",
   :banner   => "Stemcell: get ready to rock"
 }).parse!
+
+REQUIRED_PARAMETERS.each do |arg|
+  raise ArgumentError,
+    "--#{arg.gsub('_','-')} needs to be specified on the commandline or set " \
+    "by the #{arg.upcase.gsub('-','_')} environment variable" if
+      options[arg].nil? or ! options[arg]
+end
 
 # create stemcell object
 stemcell = Stemcell::Stemcell.new({

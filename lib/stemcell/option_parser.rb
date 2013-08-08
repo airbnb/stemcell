@@ -8,18 +8,6 @@ module Stemcell
     attr_reader :version
     attr_reader :banner
 
-    REQUIRED_PARAMETERS = [
-      'aws_access_key',
-      'aws_secret_key',
-      'chef_role',
-      'chef_environment',
-      'chef_data_bag_secret',
-      'git_branch',
-      'git_key',
-      'git_origin',
-      'key_name',
-    ]
-
     def initialize(config={})
       @defaults = config[:defaults] || {}
       @version = config[:version]
@@ -154,13 +142,6 @@ module Stemcell
             :type => Integer,
             :default => ENV['COUNT'] || _this.defaults[:count]
             )
-      end
-
-      REQUIRED_PARAMETERS.each do |arg|
-        raise ArgumentError,
-          "--#{arg.gsub('_','-')} needs to be specified on the commandline or set " \
-          "by the #{arg.upcase.gsub('-','_')} environment variable" if
-            options[arg].nil? or ! options[arg]
       end
 
       # convert tags from string to ruby hash

@@ -5,12 +5,12 @@
 require 'stemcell'
 
 DEFAULT_OPTIONS = {
-  :region          => 'us-east-1',
-  :instance_type   => 'm1.small',
-  :image_id        => 'ami-d726abbe',
-  :security_groups => 'internal',
-  :git_branch      => 'production',
-  :count           => 1
+  'region'          => 'us-east-1',
+  'instance_type'   => 'm1.small',
+  'image_id'        => 'ami-d726abbe',
+  'security_groups' => 'internal',
+  'git_branch'      => 'production',
+  'count'           => 1
 }
 
 # parse options from the command line and environment

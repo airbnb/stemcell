@@ -39,25 +39,25 @@ module Stemcell
         opt('region',
             'ec2 region to launch in',
             :type => String,
-            :default => ENV['REGION'] || _this.defaults[:region]
+            :default => ENV['REGION'] || _this.defaults['region']
             )
 
         opt('instance_type',
             'machine type to launch',
             :type => String,
-            :default => ENV['INSTANCE_TYPE'] || _this.defaults[:instance_type]
+            :default => ENV['INSTANCE_TYPE'] || _this.defaults['instance_type']
             )
 
         opt('image_id',
             'ami to use for launch',
             :type => String,
-            :default => ENV['IMAGE_ID'] || _this.defaults[:image_id]
+            :default => ENV['IMAGE_ID'] || _this.defaults['image_id']
             )
 
         opt('security_groups',
             'comma-separated list of security groups to launch instance with',
             :type => String,
-            :default => ENV['SECURITY_GROUPS'] || _this.defaults[:security_groups]
+            :default => ENV['SECURITY_GROUPS'] || _this.defaults['security_groups']
             )
 
         opt('availability_zone',
@@ -128,7 +128,7 @@ module Stemcell
         opt('git_branch',
             'git branch to run off',
             :type => String,
-            :default => ENV['GIT_BRANCH'] || _this.defaults[:git_branch]
+            :default => ENV['GIT_BRANCH'] || _this.defaults['git_branch']
             )
 
         opt('git_key',

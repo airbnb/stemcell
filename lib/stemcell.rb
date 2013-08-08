@@ -3,6 +3,7 @@ require 'erb'
 require 'aws-sdk'
 
 require "stemcell/version"
+require "stemcell/option_parser"
 
 module Stemcell
   class Stemcell

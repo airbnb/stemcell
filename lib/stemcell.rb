@@ -25,6 +25,7 @@ module Stemcell
       'instance_type',
       'image_id',
       'security_groups',
+      'availability_zone',
       'count'
     ]
 

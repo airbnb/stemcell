@@ -3,18 +3,39 @@ require 'erb'
 require 'aws-sdk'
 
 require "stemcell/version"
+require "stemcell/option_parser"
 
 module Stemcell
   class Stemcell
+
+    REQUIRED_OPTIONS = [
+      'aws_access_key',
+      'aws_secret_key',
+      'region'
+    ]
+
+    REQUIRED_LAUNCH_PARAMETERS = [
+      'chef_role',
+      'chef_environment',
+      'chef_data_bag_secret',
+      'git_branch',
+      'git_key',
+      'git_origin',
+      'key_name',
+      'instance_type',
+      'image_id',
+      'security_groups',
+      'availability_zone',
+      'count'
+    ]
+
     def initialize(opts={})
       @log = Logger.new(STDOUT)
       @log.level = Logger::INFO unless ENV['DEBUG']
       @log.debug "creating new stemcell object"
       @log.debug "opts are #{opts.inspect}"
-      ['aws_access_key',
-       'aws_secret_key',
-       'region',
-      ].each do |req|
+
+      REQUIRED_OPTIONS.each do |req|
         raise ArgumentError, "missing required param #{req}" unless opts[req]
         instance_variable_set("@#{req}",opts[req])
       end
@@ -29,19 +50,7 @@ module Stemcell
 
 
     def launch(opts={})
-      verify_required_options(opts,[
-        'image_id',
-        'security_groups',
-        'key_name',
-        'count',
-        'chef_role',
-        'chef_environment',
-        'chef_data_bag_secret',
-        'git_branch',
-        'git_key',
-        'git_origin',
-        'instance_type',
-      ])
+      verify_required_options(opts, REQUIRED_LAUNCH_PARAMETERS)
 
       # attempt to accept keys as file paths
       opts['git_key'] = try_file(opts['git_key'])

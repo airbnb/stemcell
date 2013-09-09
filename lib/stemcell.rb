@@ -101,8 +101,9 @@ module Stemcell
         end
       end
 
-      # generate user data script to bootstrap instance, include in launch optsions
-      launch_options[:user_data] = render_template(opts)
+      # generate user data script to bootstrap instance, include in launch options
+      # UNLESS we have manually set the user-data (ie. for ec2admin)
+      launch_options[:user_data] = render_template(opts) unless opts['user_data']
 
       # launch instances
       instances = do_launch(launch_options)

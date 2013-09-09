@@ -202,6 +202,8 @@ module Stemcell
       return generated_template
     end
 
+    public :render_template
+
     # attempt to accept keys as file paths
     def try_file(opt="")
       begin

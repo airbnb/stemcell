@@ -135,6 +135,18 @@ module Stemcell
       end
     end
 
+    # this is made public for ec2admin usage
+    def render_template(opts={})
+      this_file = File.expand_path __FILE__
+      base_dir = File.dirname this_file
+      template_file_path = File.join(base_dir,'stemcell','templates','bootstrap.sh.erb')
+      template_file = File.read(template_file_path)
+      erb_template = ERB.new(template_file)
+      generated_template = erb_template.result(binding)
+      @log.debug "genereated template is #{generated_template}"
+      return generated_template
+    end
+
     private
 
     def print_run_info(instances)
@@ -189,17 +201,6 @@ module Stemcell
       instances.each do |instance|
         instance.tags.set(tags)
       end
-    end
-
-    def render_template(opts={})
-      this_file = File.expand_path __FILE__
-      base_dir = File.dirname this_file
-      template_file_path = File.join(base_dir,'stemcell','templates','bootstrap.sh.erb')
-      template_file = File.read(template_file_path)
-      erb_template = ERB.new(template_file)
-      generated_template = erb_template.result(binding)
-      @log.debug "genereated template is #{generated_template}"
-      return generated_template
     end
 
     # attempt to accept keys as file paths

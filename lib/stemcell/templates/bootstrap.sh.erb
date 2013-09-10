@@ -24,6 +24,31 @@ exec > /var/log/init
 # redirect stderr to /var/log/init.err
 exec 2> /var/log/init.err
 
+## Only run once at a time
+# http://stackoverflow.com/questions/959475/shell-fragment-to-make-sure-only-one-instance-a-shell-script-runs-at-any-given-t
+# slightly modified to use $$
+
+SCRIPTNAME=`basename $0`
+PIDFILE=/var/run/${SCRIPTNAME}.pid
+
+
+if [ -f ${PIDFILE} ]; then
+   #verify if the process is actually still running under this pid
+   OLDPID=`cat ${PIDFILE}`
+   RESULT=`ps -ef | grep ${OLDPID} | grep ${SCRIPTNAME}`  
+
+   if [ -n "${RESULT}" ]; then
+     echo "Script already running! Exiting"
+     exit 255
+   fi
+
+fi
+### ---
+
+#grab pid of this process and update the pid file with it
+echo $$ > ${PIDFILE}
+
+
 
 ##
 ## settings
@@ -215,5 +240,11 @@ configure_chef_daemon
 ## exit
 ##
 
+
+if [ -f ${PIDFILE} ]; then
+    rm ${PIDFILE}
+fi
+# I can delete the cron too
+rm -f /etc/cron.d/ec2admin_get_callback1
 
 echo "ran successfully:)"

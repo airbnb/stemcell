@@ -27,11 +27,12 @@ exec 2> /var/log/init.err
 ## Only run once at a time
 # http://stackoverflow.com/questions/959475/shell-fragment-to-make-sure-only-one-instance-a-shell-script-runs-at-any-given-t
 # slightly modified to use $$
+# to run it I must set +e
 
 SCRIPTNAME=`basename $0`
 PIDFILE=/var/run/${SCRIPTNAME}.pid
 
-
+set +e
 if [ -f ${PIDFILE} ]; then
    #verify if the process is actually still running under this pid
    OLDPID=`cat ${PIDFILE}`
@@ -44,6 +45,7 @@ if [ -f ${PIDFILE} ]; then
 
 fi
 ### ---
+set -e
 
 #grab pid of this process and update the pid file with it
 echo $$ > ${PIDFILE}

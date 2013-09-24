@@ -49,12 +49,24 @@ instances = ARGV.inject({}) { |h, n| h[n] = []; h }
 # convert comma-separated list to Array
 regions = (options['aws_regions'] || '').split(',')
 
-def authorized?
+def authorized? instance
   return true if NON_INTERACTIVE
 
-  puts "Terminate? (y/N)? "
+  puts 'Terminate? (y/N)'
   confirm = $stdin.gets
-  return confirm && confirm.chomp.downcase == 'y'
+  confirmed = confirm && confirm.chomp.downcase == 'y'
+
+  if confirmed
+    age = Time.now - instance.launch_time
+    days = age / (24*3600)
+    if days > 2
+      puts "Instance is #{days} days old. REALLY terminate? (y/N)"
+      confirm = $stdin.gets
+      confirmed = confirm && confirm.chomp.downcase == 'y'
+    end
+  end
+
+  return confirmed
 end
 
 def delete_instance id, instance, region
@@ -70,7 +82,7 @@ def delete_instance id, instance, region
     puts "\t#{k} : #{v}"
   end
 
-  if authorized?
+  if authorized? instance
     instance.terminate
     puts "Instance #{id} terminated"
   end

@@ -33,10 +33,7 @@ end
 
 NON_INTERACTIVE = options[:non_interactive]
 
-required_parameters = [
-                       'aws_access_key',
-                       'aws_secret_key',
-                      ]
+required_parameters = %w(aws_access_key aws_secret_key)
 
 required_parameters.each do |arg|
   raise ArgumentError, "--#{arg.gsub('_','-')} needs to be specified on the commandline or set \
@@ -44,7 +41,7 @@ by the #{arg.upcase.gsub('-','_')} environment variable" if
     options[arg].nil? or ! options[arg]
 end
 
-raise ArgumentError, "you did not provide any instance ids to kill" if ARGV.size == 0
+raise ArgumentError, "you did not provide any instance ids to kill" if ARGV.empty?
 
 # a hash from instance_id => [ec2 instance objects]
 instances = ARGV.inject({}) { |h, n| h[n] = []; h }

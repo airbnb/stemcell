@@ -1,58 +1,24 @@
 #!/usr/bin/env ruby
-
-# -*- mode: shell -*-
-
 require 'stemcell'
 
-DEFAULT_OPTIONS = {
-  'region'          => 'us-east-1',
-  'instance_type'   => 'm1.small',
-  'image_id'        => 'ami-d726abbe',
-  'security_groups' => 'internal',
-  'git_branch'      => 'production',
-  'count'           => 1
-}
+# Stemcell (c) 2012 Airbnb
+#
+# This script starts an EC2 instance using attributes stored in the expanded
+# runlist of a given role, respecting default and overriden attributes. To use
+# stemcell with your role, specify a new attribute called "instance_metadata",
+# the options therein will get merged against the default options (stored in
+# the stemcell.json file in your local chef root), as well as any options
+# passed in the command line.
+#
+# Usage: stemcell [chef role] [options]
+#
+# The priority order for options (highest to lowest):
+#
+#   1) Arguments passed to launch on the command line
+#   2) Environment variables
+#   3) Options derived from the runlist
+#   4) Default instance store options (stemcell.json)
+#   5) Default launch options (stemcell.json)
+#   6) Base options (see below)
 
-# parse options from the command line and environment
-options = Stemcell::OptionParser.new({
-  :defaults => DEFAULT_OPTIONS,
-  :version  => "stemcell #{Stemcell::VERSION} (c) 2013 Airbnb",
-  :banner   => "Stemcell: get ready to rock"
-}).parse!
-
-[ Stemcell::Launcher::REQUIRED_OPTIONS,
-  Stemcell::Launcher::REQUIRED_LAUNCH_PARAMETERS
-].flatten.each do |arg|
-  raise ArgumentError,
-    "--#{arg.gsub('_','-')} needs to be specified on the commandline or set " \
-    "by the #{arg.upcase.gsub('-','_')} environment variable" if
-      options[arg].nil? or ! options[arg]
-end
-
-# create stemcell object
-stemcell = Stemcell::Launcher.new({
-  'aws_access_key' => options['aws_access_key'],
-  'aws_secret_key' => options['aws_secret_key'],
-  'region'         => options['region'],
-})
-
-# launch instance(s)
-stemcell.launch({
-  'availability_zone'    => options['availability_zone'],
-  'instance_type'        => options['instance_type'],
-  'image_id'             => options['image_id'],
-  'security_groups'      => options['security_groups'],
-  'chef_role'            => options['chef_role'],
-  'chef_environment'     => options['chef_environment'],
-  'chef_data_bag_secret' => options['chef_data_bag_secret'],
-  'git_branch'           => options['git_branch'],
-  'git_key'              => options['git_key'],
-  'git_origin'           => options['git_origin'],
-  'key_name'             => options['key_name'],
-  'tags'                 => options['tags'],
-  'count'                => options['count'],
-  'iam_role'             => options['iam_role'],
-  'ebs_optimized'        => options['ebs_optimized'],
-  'ephemeral_devices'    => options['ephemeral_devices'],
-  'placement_group'      => options['placement_group'],
-})
+Stemcell::CommandLine.run!

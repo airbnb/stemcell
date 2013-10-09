@@ -29,6 +29,28 @@ module Stemcell
       'count'
     ]
 
+    LAUNCH_PARAMETERS = [
+      'chef_role',
+      'chef_environment',
+      'chef_data_bag_secret',
+      'git_branch',
+      'git_key',
+      'git_origin',
+      'key_name',
+      'instance_type',
+      'image_id',
+      'availability_zone',
+      'count',
+      'security_groups',
+      'tags',
+      'iam_role',
+      'ebs_optimized',
+      'ephemeral_devices',
+      'placement_group'
+    ]
+
+    TEMPLATE_PATH = '../templates/bootstrap.sh.erb'
+
     def initialize(opts={})
       @log = Logger.new(STDOUT)
       @log.level = Logger::INFO unless ENV['DEBUG']

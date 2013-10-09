@@ -1,6 +1,6 @@
+require 'aws-sdk'
 require 'logger'
 require 'erb'
-require 'aws-sdk'
 
 require "stemcell/version"
 require "stemcell/option_parser"
@@ -66,7 +66,10 @@ module Stemcell
       @timeout = 300
       @start_time = Time.new
 
-      AWS.config({:access_key_id => @aws_access_key, :secret_access_key => @aws_secret_key})
+      AWS.config({
+        :access_key_id     => @aws_access_key,
+        :secret_access_key => @aws_secret_key})
+
       @ec2 = AWS::EC2.new(:ec2_endpoint => @ec2_url)
     end
 
@@ -98,10 +101,14 @@ module Stemcell
       }
 
       # specify availability zone (optional)
-      launch_options[:availability_zone] = opts['availability_zone'] if opts['availability_zone']
+      if opts['availability_zone']
+        launch_options[:availability_zone] = opts['availability_zone']
+      end
 
       # specify IAM role (optional)
-      launch_options[:iam_instance_profile] = opts['iam_role'] if opts['iam_role']
+      if opts['iam_role']
+        launch_options[:iam_instance_profile] = opts['iam_role']
+      end
 
       # specify placement group (optional)
       if opts['placement_group']
@@ -115,16 +122,17 @@ module Stemcell
 
       # specify block device mappings (optional)
       if opts['ephemeral_devices']
-        launch_options[:block_device_mappings] = opts['ephemeral_devices'].each_with_index.map do |device,i|
-          {
-            :device_name => device,
-            :virtual_name => "ephemeral#{i}"
-          }
-        end
+        launch_options[:block_device_mappings] =
+          opts['ephemeral_devices'].each_with_index.map do |device,i|
+            {
+              :device_name => device,
+              :virtual_name => "ephemeral#{i}"
+            }
+          end
       end
 
-      # generate user data script to bootstrap instance, include in launch options
-      # UNLESS we have manually set the user-data (ie. for ec2admin)
+      # generate user data script to bootstrap instance, include in launch
+      # options UNLESS we have manually set the user-data (ie. for ec2admin)
       launch_options[:user_data] ||= render_template(opts)
 
       # launch instances
@@ -160,9 +168,7 @@ module Stemcell
 
     # this is made public for ec2admin usage
     def render_template(opts={})
-      this_file = File.expand_path __FILE__
-      base_dir = File.dirname this_file
-      template_file_path = File.join(base_dir,'stemcell','templates','bootstrap.sh.erb')
+      template_file_path = File.expand_path(TEMPLATE_PATH, __FILE__)
       template_file = File.read(template_file_path)
       erb_template = ERB.new(template_file)
       generated_template = erb_template.result(binding)
@@ -183,7 +189,8 @@ module Stemcell
     end
 
     def wait(instances)
-      @log.info "Waiting up to #{@timeout} seconds for #{instances.count} instances (#{instances.inspect}):"
+      @log.info "Waiting up to #{@timeout} seconds for #{instances.count} " \
+                "instance(s) (#{instances.inspect}):"
 
       while true
         sleep 5
@@ -204,7 +211,9 @@ module Stemcell
       @log.debug "params is #{params}"
       @log.debug "required_options are #{required_options}"
       required_options.each do |required|
-        raise ArgumentError, "you need to provide option #{required}" unless params.include?(required)
+        unless params.include?(required)
+          raise ArgumentError, "you need to provide option #{required}"
+        end
       end
     end
 

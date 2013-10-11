@@ -20,8 +20,8 @@ options = Stemcell::OptionParser.new({
   :banner   => "Stemcell: get ready to rock"
 }).parse!
 
-[ Stemcell::Stemcell::REQUIRED_OPTIONS,
-  Stemcell::Stemcell::REQUIRED_LAUNCH_PARAMETERS
+[ Stemcell::Launcher::REQUIRED_OPTIONS,
+  Stemcell::Launcher::REQUIRED_LAUNCH_PARAMETERS
 ].flatten.each do |arg|
   raise ArgumentError,
     "--#{arg.gsub('_','-')} needs to be specified on the commandline or set " \
@@ -30,7 +30,7 @@ options = Stemcell::OptionParser.new({
 end
 
 # create stemcell object
-stemcell = Stemcell::Stemcell.new({
+stemcell = Stemcell::Launcher.new({
   'aws_access_key' => options['aws_access_key'],
   'aws_secret_key' => options['aws_secret_key'],
   'region'         => options['region'],

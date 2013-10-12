@@ -1,22 +1,26 @@
 # -*- encoding: utf-8 -*-
-lib = File.expand_path('../lib', __FILE__)
-$LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
+$:.push File.expand_path("../lib", __FILE__)
 require 'stemcell/version'
 
-Gem::Specification.new do |gem|
-  gem.name          = "stemcell"
-  gem.version       = Stemcell::VERSION
-  gem.authors       = ["Martin Rhoads"]
-  gem.email         = ["martin.rhoads@airbnb.com"]
-  gem.description   = %q{stemcell launches instances}
-  gem.summary       = %q{no summary}
-  gem.homepage      = ""
+Gem::Specification.new do |s|
+  s.name          = "stemcell"
+  s.version       = Stemcell::VERSION
+  s.authors       = ["Martin Rhoads"]
+  s.email         = ["martin.rhoads@airbnb.com"]
+  s.description   = %q{stemcell launches instances}
+  s.summary       = %q{no summary}
+  s.homepage      = ""
 
-  gem.files         = `git ls-files`.split($/)
-  gem.executables   = gem.files.grep(%r{^bin/}).map{ |f| File.basename(f) }
-  gem.test_files    = gem.files.grep(%r{^(test|spec|features)/})
-  gem.require_paths = ["lib"]
-  gem.add_runtime_dependency 'trollop', '~> 2.0'
-  gem.add_runtime_dependency 'aws-sdk', '~> 1.9'
+  s.files         = `git ls-files`.split($/)
+  s.executables   = s.files.grep(%r{^bin/}).map{ |f| File.basename(f) }
+  s.test_files    = s.files.grep(%r{^(test|spec|features)/})
+  s.require_paths = ["lib"]
+
+  s.add_runtime_dependency 'aws-sdk',   '~> 1.9'
+  s.add_runtime_dependency 'chef',      '~> 11.4.0'
+
+  s.add_runtime_dependency 'trollop',   '~> 2.0'
+  s.add_runtime_dependency 'aws-creds', '~> 0.2.2'
+  s.add_runtime_dependency 'colored',   '~> 1.2'
+  s.add_runtime_dependency 'json',      '~> 1.7.7'
 end
-

@@ -26,11 +26,15 @@ $ gem install stemcell
 
 ## Configuration
 
+If you're using the command line tool, you'll need to add a `stemcell.json`
+to the root of your chef repo. It contains default attributes for launching
+instances as well as the mapping from backing stores to images. For an
+example, see `examples/stemcell.json`.
+
 You should create an rc file for stemcell with your standard options
 (and place it in the root dir as .stemcellrc?). You can see an example
-in examples/stemcellrc. You can get most of the options from your
-.chef/knife.rb but you will need to get the new chef deploy key so
-that instances that you launch can download code.
+in `examples/stemcellrc`. You will need a chef deploy key so that instances
+you launch can download code.
 
 ## Usage
 
@@ -43,7 +47,7 @@ $ source .stemcellrc
 ### Simple launch:
 
 ```bash
-$ ./bin/stemcell --chef-role $your_chef_role --git-branch $your_chef_branch
+$ stemcell $your_chef_role --git-branch $your_chef_branch
 ```
 
 This will cause instance(s) to be launched and their ip's and instance
@@ -52,7 +56,7 @@ id to be printed to the screen.
 ### More options:
 
 ```bash
-$ ./bin/stemcell --help
+$ stemcell --help
 ```
 
 ### Watching install:

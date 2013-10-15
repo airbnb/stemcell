@@ -27,7 +27,7 @@ module Stemcell
       template_options = read_template
       @default_options = DEFAULT_OPTIONS.merge(template_options['defaults'])
 
-      @all_backing_store_options = template_options['backing_store'] || {}
+      @all_backing_store_options = template_options['backing_store']
       @all_azs_by_region = template_options['availability_zones']
     end
 
@@ -70,12 +70,35 @@ module Stemcell
     private
 
     def read_template
-      template_path = File.join(chef_root, 'stemcell.json')
-      JSON.parse(IO.read(template_path))
-    rescue Errno::ENOENT
-      raise NoTemplateError
-    rescue => e
-      raise TemplateParseError, e.message
+      begin
+        template_path = File.join(chef_root, 'stemcell.json')
+        template_options = JSON.parse(IO.read(template_path))
+      rescue Errno::ENOENT
+        raise NoTemplateError
+      rescue => e
+        raise TemplateParseError, e.message
+      end
+
+      errors = []
+      unless template_options.include?('defaults')
+        errors << 'missing required section "defaults"; should be a hash containing default launch options'
+      end
+
+      if template_options['availability_zones'].nil?
+        errors << 'missing or empty section "availability zones"'
+        errors << '"availability_zones" should be a hash from region name => list of allowed zones in that region'
+      end
+
+      if template_options['backing_store'].nil? or template_options['backing_store'].empty?
+        errors << 'missing or empty section "backing_store"'
+        errors << '"backing_store" should be a hash from store type (like "ebs") => hash of options for that store'
+      end
+
+      unless errors.empty?
+        raise TemplateParseError, errors.join("; ")
+      end
+
+       return template_options
     end
 
     def expand_role_options(chef_role, chef_environment)
@@ -103,14 +126,14 @@ module Stemcell
 
       backing_store_options = @all_backing_store_options[backing_store]
       if backing_store_options.nil?
-        raise Launch::UnknownBackingStoreError.new(backing_store)
+        raise Stemcell::UnknownBackingStoreError.new(backing_store)
       end
       backing_store_options
     end
 
     def random_az_in_region(region)
-      possible_azs = @all_azs_by_region[region]
-      possible_azs && possible_azs.sample
+      possible_azs = @all_azs_by_region[region] || []
+      possible_azs.sample
     end
   end
 end

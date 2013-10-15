@@ -81,9 +81,9 @@ module Stemcell
       error "There was a problem expanding the #{chef_role} role. " \
             "Perhaps it or one of its dependencies does not exist."
     rescue MissingStemcellOptionError => e
-      error "The '#{e.option}' attribute needs to be specified on " \
-            "the command line, in the role, or set by the " \
-            "#{e.option.upcase.gsub('-','_')} environment variable."
+      error "The '#{e.option}' attribute needs to be specified on the " \
+            "command line, in the role, in the stemcell.json defaults, " \
+            "or set by the #{e.option.upcase.gsub('-','_')} environment variable."
     rescue UnknownBackingStoreError => e
       error "Unknown backing store type: #{e.backing_store}."
     end

@@ -1,7 +1,7 @@
 {
   "defaults": {
     "region":"us-east-1",
-    "security_groups": ["internal"],
+    "security_groups": ["default"],
     "instance_type": "m1.small",
     "backing_store": "instance_store"
   },

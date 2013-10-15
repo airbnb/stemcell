@@ -5,11 +5,11 @@ require 'stemcell/version'
 Gem::Specification.new do |s|
   s.name          = "stemcell"
   s.version       = Stemcell::VERSION
-  s.authors       = ["Martin Rhoads"]
-  s.email         = ["martin.rhoads@airbnb.com"]
-  s.description   = %q{stemcell launches instances}
+  s.authors       = ["Martin Rhoads", "Igor Serebryany", "Nelson Gauthier", "Patrick Viet"]
+  s.email         = ["martin.rhoads@airbnb.com", "igor.serebryany@airbnb.com"]
+  s.description   = %q{A tool for launching and bootstrapping EC2 instances}
   s.summary       = %q{no summary}
-  s.homepage      = ""
+  s.homepage      = "https://github.com/airbnb/stemcell"
 
   s.files         = `git ls-files`.split($/)
   s.executables   = s.files.grep(%r{^bin/}).map{ |f| File.basename(f) }

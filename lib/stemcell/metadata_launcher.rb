@@ -55,7 +55,7 @@ module Stemcell
         Launcher::REQUIRED_LAUNCH_PARAMETERS
       ].flatten.each do |arg|
         if options[arg].nil? or !options[arg]
-          raise MissingOptionError.new(arg)
+          raise Stemcell::MissingStemcellOptionError.new(arg)
         end
       end
     end

@@ -5,8 +5,8 @@ require 'stemcell/version'
 Gem::Specification.new do |s|
   s.name          = "stemcell"
   s.version       = Stemcell::VERSION
-  s.authors       = ["Martin Rhoads"]
-  s.email         = ["martin.rhoads@airbnb.com"]
+  s.authors       = ["Martin Rhoads","Igor Serebryany","Pierre Carrier","Patrick Viet","Nelson Gauthier"]
+  s.email         = ["martin.rhoads@airbnb.com","igor.serebryany@airbnb.com","pierre.carrier@airbnb.com","patrick.viet@airbnb.com","nelson.gauthier@airbnb.com"]
   s.description   = %q{stemcell launches instances}
   s.summary       = %q{no summary}
   s.homepage      = ""

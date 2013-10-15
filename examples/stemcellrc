@@ -1,11 +1,29 @@
 # these options need to be set
 export AWS_ACCESS_KEY=your_aws_access_key
 export AWS_SECRET_KEY=your_aws_secret_key
+
+# AWC keys can be managed from the AWS console by going
+#   to EC2 and then clicking 'Key Pairs'. Every EC2 instance
+#   needs a key pair to launch; you can use the private component
+#   of this key pair to get into your machine before chef has run
 export KEY_NAME=your_aws_ssh_key_name
-export LOCAL_CHEF_ROOT=/path/to/your/local/chef/repository
+
+# We use encrypted data bags; to generate an ecrypted data bag
+#   secret, follow instructions here:
+#   http://docs.opscode.com/chef/essentials_data_bags.html#secret-keys
 export CHEF_DATA_BAG_SECRET=/path/to/encrypted/data/bag/secret
+
+# This expects a standard opscode mono-repo, like the one
+#   modeled here: https://github.com/opscode/chef-repo
+export LOCAL_CHEF_ROOT=/path/to/your/local/chef/repository
+
+# The git origin is the publically-accessible version of the
+#   local chef root; we use a github enterprise server
+export GIT_ORIGIN=git@git.airbnb.com:airbnb/chef.git
+
+# The git key is an SSH key which has pull permissions on
+#   the GIT_ORIGIN repo
 export GIT_KEY=/path/to/chef/deploy/key
 
-# these options should not need to be set
+# Which security group should you launch
 export SECURITY_GROUP=default
-export GIT_ORIGIN=git@github.com:airbnb/chef.git

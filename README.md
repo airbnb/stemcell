@@ -26,22 +26,26 @@ $ gem install stemcell
 
 ## Configuration
 
-If you're using the command line tool, you'll need to add a `stemcell.json`
-to the root of your chef repo. It contains default attributes for launching
-instances as well as the mapping from backing stores to images. For an
-example, see `examples/stemcell.json`.
+If you're using the command line tool, you'll need to add a `stemcell.json` to the root of your chef repo.
+It contains default attributes for launching instances as well as the mapping from backing stores to images.
+For an example, see `examples/stemcell.json`.
 
-You should create an rc file for stemcell with your standard options
-(and place it in the root dir as .stemcellrc?). You can see an example
-in `examples/stemcellrc`. You will need a chef deploy key so that instances
-you launch can download code.
+You should create an RC file for stemcell with your standard options (and place it in the root dir as .stemcellrc?).
+You can see an example in `examples/stemcellrc`.
+As documented in that file, you will need:
+* a mono-repo for chef (like the kind described [here](https://github.com/opscode/chef-repo))
+* a local checkout of the repo
+* an ssh key that's allowed to read that repo
+* AWS credentials with permission to create instances
+* an AWS [ssh key pair](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html)
+* an encrypted data bag secret (optional)
 
 ## Usage
 
 ### Include your base config:
 
 ```bash
-$ source .stemcellrc
+$ source ~/.stemcellrc
 ```
 
 ### Simple launch:
@@ -50,8 +54,7 @@ $ source .stemcellrc
 $ stemcell $your_chef_role --git-branch $your_chef_branch
 ```
 
-This will cause instance(s) to be launched and their ip's and instance
-id to be printed to the screen.
+This will cause instance(s) to be launched and their ip's and instance id to be printed to the screen.
 
 ### More options:
 
@@ -78,8 +81,6 @@ $ necrosis i-12345678 i-12345679 i-12345670
 This README presents `stemcell` as a tool for administrators to use to create instances.
 However, we designed `stemcell` to be easily useful for automated systems which control server infrastructure.
 These automated systems can call out to `stemcell` on the command-line or use the ruby classes directly.
-
-To see how we manage our cloud, check out the rest of SmartStack, especially Cortex, our auto-scaling system.
 
 ## Similar Tools ##
 

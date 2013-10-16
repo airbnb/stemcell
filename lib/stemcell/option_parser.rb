@@ -149,10 +149,24 @@ module Stemcell
         :env   => 'COUNT'
       },
       {
+        :name  => 'tail',
+        :desc  => "interactively tail the initial converge",
+        :type  => nil,
+        :env   => 'TAIL',
+        :short => :t
+      },
+      {
+        :name  => 'ssh_user',
+        :desc  => "ssh username",
+        :type  => String,
+        :env   => 'SSH_USER',
+        :short => :u
+      },
+      {
         :name  => 'non_interactive',
         :desc  => "assumes an affirmative answer to all prompts",
         :type  => nil,
-        :env   =>  'NON_INTERACTIVE',
+        :env   => 'NON_INTERACTIVE',
         :short => :f
       }
     ]

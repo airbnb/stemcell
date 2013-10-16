@@ -50,6 +50,7 @@ module Stemcell
     ]
 
     TEMPLATE_PATH = '../templates/bootstrap.sh.erb'
+    LAST_BOOTSTRAP_LINE = "Stemcell bootstrap finished successfully!"
 
     def initialize(opts={})
       @log = Logger.new(STDOUT)
@@ -171,6 +172,7 @@ module Stemcell
       template_file_path = File.expand_path(TEMPLATE_PATH, __FILE__)
       template_file = File.read(template_file_path)
       erb_template = ERB.new(template_file)
+      last_bootstrap_line = LAST_BOOTSTRAP_LINE
       generated_template = erb_template.result(binding)
       @log.debug "genereated template is #{generated_template}"
       return generated_template
@@ -179,7 +181,7 @@ module Stemcell
     private
 
     def print_run_info(instances)
-      puts "here is the info for what's launched:"
+      puts "\nhere is the info for what's launched:"
       instances.each do |instance|
         puts "\tinstance_id: #{instance.instance_id}"
         puts "\tpublic ip:   #{instance.public_ip_address}"

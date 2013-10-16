@@ -17,6 +17,7 @@ Gem::Specification.new do |s|
   s.require_paths = ["lib"]
 
   s.add_runtime_dependency 'aws-sdk',   '~> 1.9'
+  s.add_runtime_dependency 'net-ssh',   '~> 2.6'
   s.add_runtime_dependency 'chef',      '~> 11.4.0'
 
   s.add_runtime_dependency 'trollop',   '~> 2.0'

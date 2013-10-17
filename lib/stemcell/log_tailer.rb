@@ -10,6 +10,9 @@ module Stemcell
     attr_reader :finished
     attr_reader :interrupted
 
+    # Don't wait more than two minutes
+    MAX_WAIT_FOR_SSH = 120
+
     TAILING_COMMAND =
       "while [ ! -s /var/log/init ]; " \
       "do " \
@@ -23,12 +26,14 @@ module Stemcell
       @hostname = hostname
       @username = username
       @ssh_port = ssh_port
+
+      @finished = false
       @interrupted = false
     end
 
     def run!
       while_catching_interrupt do
-        wait_for_ssh
+        return unless wait_for_ssh
         tail_until_interrupt
       end
     end
@@ -39,12 +44,41 @@ module Stemcell
       return if interrupted
 
       print "Waiting for sshd..."
-      print "." until (banner = tcp_test_ssh) || interrupted
 
-      if banner
-        puts " UP!".green
-        puts "Server responded with: #{banner.green}"
+      start_time = Time.now
+      banner = nil
+
+      loop do
+        print "."
+        begin
+          banner = get_ssh_banner
+          break
+        rescue SocketError,
+               IOError,
+               Errno::ECONNREFUSED,
+               Errno::ECONNRESET,
+               Errno::EHOSTUNREACH,
+               Errno::ENETUNREACH
+          sleep 5
+        rescue Errno::ETIMEDOUT,
+               Errno::EPERM
+        end
+
+        # Don't wait forever
+        if Time.now - start_time > MAX_WAIT_FOR_SSH
+          puts " TIMEOUT!".red
+          return false
+        end
+
+        if done?
+          puts " ABORT!".red
+          return false
+        end
       end
+
+      puts " UP!".green
+      puts "Server responded with: #{banner.green}"
+      true
     end
 
     def tail_until_interrupt
@@ -68,9 +102,11 @@ module Stemcell
         end
       end
 
-      session.loop(0.1) do
-        if finished || interrupted
+      session.loop(1) do
+        if done?
+          # Send an interrupt to kill the remote process
           channel.send_data(Net::SSH::Connection::Term::VINTR)
+          channel.send_data "exit\n"
           channel.eof!
           channel.close
           false
@@ -78,24 +114,17 @@ module Stemcell
           session.busy?
         end
       end
-      
+
       session.close
     end
 
-    def tcp_test_ssh
+    def done?
+      finished || interrupted
+    end
+
+    def get_ssh_banner
       socket = TCPSocket.new(hostname, ssh_port)
       IO.select([socket], nil, nil, 5) ? socket.gets : nil
-    rescue SocketError,
-           IOError,
-           Errno::ECONNREFUSED,
-           Errno::ECONNRESET,
-           Errno::EHOSTUNREACH,
-           Errno::ENETUNREACH
-      sleep 5
-      nil
-    rescue Errno::ETIMEDOUT,
-           Errno::EPERM
-      nil
     ensure
       socket.close if socket
     end

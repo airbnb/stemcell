@@ -14,7 +14,8 @@ module Stemcell
 
     OPTION_PARSER_DEFAULTS = {
       'non_interactive' => false,
-      'aws_creds' => 'default'
+      'aws_creds'       => 'default',
+      'ssh_user'        => 'ubuntu'
     }
 
     def self.run!
@@ -45,7 +46,10 @@ module Stemcell
       # Move launcher in the non-interactive mode (if requested)
       launcher.interactive = !options.delete('non_interactive')
 
-      launch_instance(chef_role, options)
+      instances = launch_instance(chef_role, options)
+      tail_converge(instances, options) if options['tail']
+
+      puts "\nDone.\n".green
     end
 
     private
@@ -86,6 +90,19 @@ module Stemcell
             "or set by the #{e.option.upcase.gsub('-','_')} environment variable."
     rescue UnknownBackingStoreError => e
       error "Unknown backing store type: #{e.backing_store}."
+    end
+
+    def tail_converge(instances, options={})
+      puts "\nTailing the initial converge. Press Ctrl-C to exit...".green
+
+      if instances.count > 1
+        puts "\nYou're launching more than one instance."
+        puts "Showing you on the output from #{instances.first.instance_id}."
+      end
+
+      puts "\n"
+      tailer = LogTailer.new(instances.first.public_dns_name, options['ssh_user'])
+      tailer.run!
     end
 
     def retrieve_defaults

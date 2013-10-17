@@ -61,7 +61,7 @@ module Stemcell
     end
 
     def describe_instance(options={})
-      puts "\nYou're about to launch instance(s) with these options:\n\n"
+      puts "\nYou're about to launch instance(s) with the following options:\n\n"
 
       options.keys.sort.each do |key|
         value = options[key]

@@ -24,6 +24,13 @@ Or install it yourself as:
 $ gem install stemcell
 ```
 
+Or build the gem locally and install it:
+
+```bash
+$ gem build stemcell.gemspec
+$ gem install ./stemcell-0.4.3.gem
+```
+
 ## Configuration
 
 If you're using the command line tool, you'll need to add a `stemcell.json` to the root of your chef repo.

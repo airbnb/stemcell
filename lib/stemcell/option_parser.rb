@@ -101,6 +101,12 @@ module Stemcell
         :env   => 'EBS_OPTIMIZED'
       },
       {
+        :name  => 'block_device_mappings',
+        :desc  => 'block device mappings',
+        :type  => String,
+        :env   => 'BLOCK_DEVICE_MAPPINGS'
+      },
+      {
         :name  => 'ephemeral_devices',
         :desc  => "comma-separated list of block devices to map ephemeral devices to",
         :type  => String,
@@ -213,6 +219,71 @@ module Stemcell
           tags[key] = value
         end
         options['tags'] = tags
+      end
+
+      # parse block_device_mappings to convert it from the standard CLI format
+      # to the EC2 Ruby API format.
+      # All of this is a bit hard to find so here are some docs links to
+      # understand
+
+      # CLI This format is documented by typing
+      # ec2-run-instances --help and looking at the -b option
+      # Basically, it's either
+
+      # none
+      # ephemeral<number>
+      # '[<snapshot-id>][:<size>[:<delete-on-termination>][:<type>[:<iops>]]]'
+
+      # Ruby API (that does call to the native API)
+      # gems/aws-sdk-1.17.0/lib/aws/ec2/instance_collection.rb
+      # line 91 + example line 57
+
+      if options['block_device_mappings']
+        block_device_mappings = []
+        options['block_device_mappings'].split(',').each do |device_set|
+          device,devparam = device_set.split('=')
+
+          mapping = {}
+
+          if devparam == 'none'
+            mapping = { :no_device => device }
+          else
+            mapping = { :device_name => device }
+            if devparam =~ /^ephemeral[0-3]/
+              mapping[:virtual_name] = devparam
+            else
+              # we have a more complex 'ebs' parameter
+              #'[<snapshot-id>][:<size>[:<delete-on-termination>][:<type>[:<iops>]]]'
+
+              mapping[:ebs] = {}
+              snapshot_id, volume_size, delete_on_termination, volume_type, iops = devparam.split ':'
+
+              volume_size &&= volume_size.to_i
+              iops        &&= iops.to_i
+
+              if delete_on_termination
+                delete_on_termination = (delete_on_termination == "true") ?
+                  true : false
+              end
+
+              mapping[:ebs] = {
+                :snapshot_id           => snapshot_id,
+                :volume_size           => volume_size,
+                :delete_on_termination => delete_on_termination,
+                :volume_type           => volume_type,
+                :iops                  => iops
+              }
+
+              # Remove keys with a nil value / empty keys
+              mapping[:ebs].delete_if { |k, v| v.nil? or v.to_s == '' }
+
+            end
+          end
+
+          block_device_mappings.push mapping
+        end
+
+        options['block_device_mappings'] = block_device_mappings
       end
 
       # convert security_groups from comma seperated string to ruby array

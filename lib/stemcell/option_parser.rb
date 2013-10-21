@@ -261,14 +261,14 @@ module Stemcell
 
               # a bit ugly but short and won't change
               # notice the to_i on volume_size parameter
-              mapping[:ebs][:snapshot_id] = devparam[0] if devparam[0] != ""
+              mapping[:ebs][:snapshot_id] = devparam[0] unless devparam[0].blank?
               mapping[:ebs][:volume_size] = devparam[1].to_i
 
               # defaults to true - except if we have the exact string "false"
               mapping[:ebs][:delete_on_termination] = (devparam[2] != "false")
 
               # optional. notice the to_i on iops parameter
-              mapping[:ebs][:volume_type] = devparam[3] if devparam[3] != ""
+              mapping[:ebs][:volume_type] = devparam[3] unless devparam[3].blank?
               mapping[:ebs][:iops] = devparam[4].to_i if (devparam[4].to_i)
 
             end

@@ -101,6 +101,12 @@ module Stemcell
         :env   => 'EBS_OPTIMIZED'
       },
       {
+        :name  => 'block_device_mappings',
+        :desc  => 'block device mappings',
+        :type  => String,
+        :env   => 'BLOCK_DEVICE_MAPPINGS'
+      },
+      {
         :name  => 'ephemeral_devices',
         :desc  => "comma-separated list of block devices to map ephemeral devices to",
         :type  => String,
@@ -213,6 +219,65 @@ module Stemcell
           tags[key] = value
         end
         options['tags'] = tags
+      end
+
+      # parse block_device_mappings to convert it from the standard CLI format
+      # to the EC2 Ruby API format.
+      # All of this is a bit hard to find so here are some docs links to
+      # understand
+
+      # CLI This format is documented by typing
+      # ec2-run-instances --help and looking at the -b option
+      # Basically, it's either
+
+      # none
+      # ephemeral<number>
+      # '[<snapshot-id>][:<size>[:<delete-on-termination>][:<type>[:<iops>]]]'
+
+      # Ruby API (that does call to the native API)
+      # gems/aws-sdk-1.17.0/lib/aws/ec2/instance_collection.rb
+      # line 91 + example line 57
+
+      if options['block_device_mappings']
+        block_device_mappings = []
+        options['block_device_mappings'].split(',').each do |device_set|
+          device,devparam = device_set.split('=')
+
+          mapping = {}
+
+          if devparam == 'none'
+            mapping = { :no_device => device }
+          else
+            mapping = { :device_name => device }
+            if devparam =~ /^ephemeral[0-3]/
+              mapping[:virtual_name] = devparam
+            else
+              # we have a more complex 'ebs' parameter
+              #'[<snapshot-id>][:<size>[:<delete-on-termination>][:<type>[:<iops>]]]'
+
+              mapping[:ebs] = {}
+
+              devparam = devparam.split ':'
+
+              # a bit ugly but short and won't change
+              # notice the to_i on volume_size parameter
+              mapping[:ebs][:snapshot_id] = devparam[0] unless devparam[0].blank?
+              mapping[:ebs][:volume_size] = devparam[1].to_i
+
+              # defaults to true - except if we have the exact string "false"
+              mapping[:ebs][:delete_on_termination] = (devparam[2] != "false")
+
+              # optional. notice the to_i on iops parameter
+              mapping[:ebs][:volume_type] = devparam[3] unless devparam[3].blank?
+              mapping[:ebs][:iops] = devparam[4].to_i if (devparam[4].to_i)
+
+            end
+          end
+
+          block_device_mappings.push mapping
+        end
+
+        options['block_device_mappings'] = block_device_mappings
       end
 
       # convert security_groups from comma seperated string to ruby array

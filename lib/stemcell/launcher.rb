@@ -45,6 +45,7 @@ module Stemcell
       'tags',
       'iam_role',
       'ebs_optimized',
+      'block_device_mappings',
       'ephemeral_devices',
       'placement_group'
     ]
@@ -121,16 +122,23 @@ module Stemcell
       # specify an EBS-optimized instance (optional)
       launch_options[:ebs_optimized] = true if opts['ebs_optimized']
 
-      # specify block device mappings (optional)
-      if opts['ephemeral_devices']
-        launch_options[:block_device_mappings] =
-          opts['ephemeral_devices'].each_with_index.map do |device,i|
-            {
-              :device_name => device,
-              :virtual_name => "ephemeral#{i}"
-            }
-          end
+      # specify raw block device mappings (optional)
+      if opts['block_device_mappings']
+        launch_options[:block_device_mappings] = opts['block_device_mappings']
       end
+
+      # specify ephemeral block device mappings (optional)
+      if opts['ephemeral_devices']
+        launch_options[:block_device_mappings] ||= []
+        opts['ephemeral_devices'].each_with_index do |device,i|
+          launch_options[:block_device_mappings].push ({
+            :device_name => device,
+            :virtual_name => "ephemeral#{i}"
+          })
+        end
+      end
+
+      #
 
       # generate user data script to bootstrap instance, include in launch
       # options UNLESS we have manually set the user-data (ie. for ec2admin)

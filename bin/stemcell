@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 require 'stemcell'
 
-# Stemcell (c) 2012 Airbnb
+# Stemcell (c) 2012-2013 Airbnb
 #
 # This script starts an EC2 instance using attributes stored in the expanded
 # runlist of a given role, respecting default and overriden attributes. To use

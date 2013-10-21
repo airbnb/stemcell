@@ -256,26 +256,20 @@ module Stemcell
               #'[<snapshot-id>][:<size>[:<delete-on-termination>][:<type>[:<iops>]]]'
 
               mapping[:ebs] = {}
-              snapshot_id, volume_size, delete_on_termination, volume_type, iops = devparam.split ':'
 
-              volume_size &&= volume_size.to_i
-              iops        &&= iops.to_i
+              devparam = devparam.split ':'
 
-              if delete_on_termination
-                delete_on_termination = (delete_on_termination == "true") ?
-                  true : false
-              end
+              # a bit ugly but short and won't change
+              # notice the to_i on volume_size parameter
+              mapping[:ebs][:snapshot_id] = devparam[0] if devparam[0] != ""
+              mapping[:ebs][:volume_size] = devparam[1].to_i
 
-              mapping[:ebs] = {
-                :snapshot_id           => snapshot_id,
-                :volume_size           => volume_size,
-                :delete_on_termination => delete_on_termination,
-                :volume_type           => volume_type,
-                :iops                  => iops
-              }
+              # defaults to true - except if we have the exact string "false"
+              mapping[:ebs][:delete_on_termination] = (devparam[2] != "false")
 
-              # Remove keys with a nil value / empty keys
-              mapping[:ebs].delete_if { |k, v| v.nil? or v.to_s == '' }
+              # optional. notice the to_i on iops parameter
+              mapping[:ebs][:volume_type] = devparam[3] if devparam[3] != ""
+              mapping[:ebs][:iops] = devparam[4].to_i if (devparam[4].to_i)
 
             end
           end

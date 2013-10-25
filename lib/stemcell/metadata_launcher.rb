@@ -102,7 +102,11 @@ module Stemcell
         launch_options[a] = options[a]
       end
       # Create the instance from these options.
-      launcher.launch(launch_options)
+      if interactive
+        launcher.launch(launch_options)
+      else
+        launcher.launch_without_wait(launch_options)
+      end
     end
   end
 end

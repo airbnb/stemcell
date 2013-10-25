@@ -47,7 +47,8 @@ module Stemcell
       'ebs_optimized',
       'block_device_mappings',
       'ephemeral_devices',
-      'placement_group'
+      'placement_group',
+      'user_data',
     ]
 
     TEMPLATE_PATH = '../templates/bootstrap.sh.erb'
@@ -75,8 +76,18 @@ module Stemcell
       @ec2 = AWS::EC2.new(:ec2_endpoint => @ec2_url)
     end
 
-
     def launch(opts={})
+      instances = launch_without_wait(opts)
+
+      # wait for aws to report instance stats
+      wait(instances)
+
+      print_run_info(instances)
+      @log.info "successfully launched instances"
+      return instances
+    end
+
+    def launch_without_wait(opts={})
       verify_required_options(opts, REQUIRED_LAUNCH_PARAMETERS)
 
       # attempt to accept keys as file paths
@@ -147,14 +158,9 @@ module Stemcell
       # launch instances
       instances = do_launch(launch_options)
 
-      # wait for aws to report instance stats
-      wait(instances)
-
       # set tags on all instances launched
       set_tags(instances, tags)
-
-      print_run_info(instances)
-      @log.info "launched instances successfully"
+      @log.info "successfully sent instances launch API calls"
       return instances
     end
 

@@ -49,6 +49,7 @@ module Stemcell
       'ephemeral_devices',
       'placement_group',
       'user_data',
+      'user',
     ]
 
     TEMPLATE_PATH = '../templates/bootstrap.sh.erb'
@@ -98,9 +99,10 @@ module Stemcell
       tags = {
         'Name' => "#{opts['chef_role']}-#{opts['chef_environment']}",
         'Group' => "#{opts['chef_role']}-#{opts['chef_environment']}",
-        'created_by' => ENV['USER'],
+        'created_by' => ((opts.delete 'user') || ENV['USER']),
         'stemcell' => VERSION,
       }
+
       tags.merge!(opts['tags']) if opts['tags']
 
       # generate launch options

@@ -87,7 +87,7 @@ module Stemcell
       tags = {
         'Name' => "#{opts['chef_role']}-#{opts['chef_environment']}",
         'Group' => "#{opts['chef_role']}-#{opts['chef_environment']}",
-        'created_by' => ENV['USER'],
+        'created_by' => opts.fetch('user', ENV['USER']),
         'stemcell' => VERSION,
       }
       tags.merge!(opts['tags']) if opts['tags']

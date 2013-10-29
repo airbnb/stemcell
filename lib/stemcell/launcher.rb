@@ -87,7 +87,7 @@ module Stemcell
       tags = {
         'Name' => "#{opts['chef_role']}-#{opts['chef_environment']}",
         'Group' => "#{opts['chef_role']}-#{opts['chef_environment']}",
-        'created_by' => ENV['USER'],
+        'created_by' => opts.fetch('user', ENV['USER']),
         'stemcell' => VERSION,
       }
       tags.merge!(opts['tags']) if opts['tags']
@@ -96,7 +96,6 @@ module Stemcell
       launch_options = {
         :image_id => opts['image_id'],
         :security_groups => opts['security_groups'],
-        :user_data => opts['user_data'],
         :instance_type => opts['instance_type'],
         :key_name => opts['key_name'],
         :count => opts['count'],
@@ -142,19 +141,22 @@ module Stemcell
 
       # generate user data script to bootstrap instance, include in launch
       # options UNLESS we have manually set the user-data (ie. for ec2admin)
-      launch_options[:user_data] ||= render_template(opts)
+      launch_options[:user_data] = opts.fetch('user_data', render_template(opts))
 
       # launch instances
       instances = do_launch(launch_options)
 
-      # wait for aws to report instance stats
-      wait(instances)
-
       # set tags on all instances launched
       set_tags(instances, tags)
+      @log.info "sent ec2 api requests successfully"
 
-      print_run_info(instances)
-      @log.info "launched instances successfully"
+      # wait for aws to report instance stats
+      if opts.fetch('wait', true)
+        wait(instances)
+        print_run_info(instances)
+        @log.info "launched instances successfully"
+      end
+
       return instances
     end
 

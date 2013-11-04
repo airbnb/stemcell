@@ -13,6 +13,9 @@ export KEY_NAME=your_aws_ssh_key_name
 #   http://docs.opscode.com/chef/essentials_data_bags.html#secret-keys
 export CHEF_DATA_BAG_SECRET=/path/to/encrypted/data/bag/secret
 
+# Chef environment
+CHEF_ENVIRONMENT=default
+
 # This expects a standard opscode mono-repo, like the one
 #   modeled here: https://github.com/opscode/chef-repo
 export LOCAL_CHEF_ROOT=/path/to/your/local/chef/repository
@@ -21,9 +24,12 @@ export LOCAL_CHEF_ROOT=/path/to/your/local/chef/repository
 #   local chef root; we use a github enterprise server
 export GIT_ORIGIN=git@git.airbnb.com:airbnb/chef.git
 
+# The git branch to use by default
+export GIT_BRANCH=production
+
 # The git key is an SSH key which has pull permissions on
 #   the GIT_ORIGIN repo
 export GIT_KEY=/path/to/chef/deploy/key
 
-# Which security group should you launch
-export SECURITY_GROUP=default
+# Which security groups should you launch
+export SECURITY_GROUPS=default

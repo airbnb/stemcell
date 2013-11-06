@@ -125,7 +125,10 @@ update_repo() {
 
 
 configure_chef() {
-  echo "saving current branch ($branch), role ($role), and environment ($environment)"
+  echo "saving current origin ($origin), branch ($branch), role ($role), and environment ($environment)"
+  echo "$origin" > $originfile
+  chmod 644 $originfile
+
   echo "$branch" > $branchfile
   chmod 644 $branchfile
 
@@ -221,6 +224,7 @@ keyfile=${chef_dir}/git_key
 envfile=${chef_dir}/environment
 rolefile=${chef_dir}/role
 branchfile=${chef_dir}/branch
+originfile=${chef_dir}/origin
 git_wrapper=${chef_dir}/git_wrapper
 
 echo "starting chef bootstrapping..."

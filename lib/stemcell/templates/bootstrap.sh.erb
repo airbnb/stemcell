@@ -89,11 +89,16 @@ install() {
 }
 
 
-get_instance_id() {
-  instance_id=`curl --retry 5 --retry-delay 5 169.254.169.254/latest/meta-data/instance-id` 1>&2
-  echo instance_id is $instance_id
-}
+set_hostname() {
+  instance_id=`curl --silent --retry 5 --retry-delay 5 169.254.169.254/latest/meta-data/instance-id` 1>&2
+  local_ip=`curl --silent --retry 5 --retry-delay 5 169.254.169.254/latest/meta-data/local-ipv4` 1>&2
+  echo "setting hostname to the instance_id: $instance_id"
+  echo $instance_id > /etc/hostname
+  hostname -F /etc/hostname
 
+  # set `hostname -f` to resolve to SOMETHING; no fqdn because we have no domain
+  echo "$local_ip $instance_id" >> /etc/hosts
+}
 
 install_chef() {
   if ! which chef-solo > /dev/null ; then
@@ -232,7 +237,7 @@ mkdir -p ${chef_dir}
 update
 install curl
 install git
-get_instance_id
+set_hostname
 install_chef
 update_repo
 configure_chef

@@ -38,6 +38,8 @@ module Stemcell
       'git_origin',
       'key_name',
       'instance_type',
+      'instance_hostname',
+      'instance_domain_name',
       'image_id',
       'availability_zone',
       'count',

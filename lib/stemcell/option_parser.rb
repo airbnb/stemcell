@@ -149,6 +149,18 @@ module Stemcell
         :env   => 'GIT_KEY'
       },
       {
+        :name  => 'instance_hostname',
+        :desc  => "the hostname of new instances; defaults to the instance id if omitted",
+        :type  => String,
+        :env   => 'INSTANCE_HOSTNAME'
+      },
+      {
+        :name  => 'instance_domain_name',
+        :desc  => "the domain part of the FQDN of created instances (like airbnb.com)",
+        :type  => String,
+        :env   => 'INSTANCE_DOMAIN_NAME'
+      },
+      {
         :name  => 'count',
         :desc  => "number of instances to launch",
         :type  => Integer,

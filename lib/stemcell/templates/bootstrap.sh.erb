@@ -65,8 +65,10 @@ role=<%= opts['chef_role'] %>
 environment=<%= opts['chef_environment'] %>
 origin=<%= opts['git_origin'] %>
 branch=<%= opts['git_branch'] %>
-git_key='<%= opts["git_key"] %>'
+git_key='<%= opts['git_key'] %>'
 data_bag_secret='<%= opts["chef_data_bag_secret"] %>'
+hostname='<%= opts['instance_hostname'] %>'
+domain_name='<%= opts['instance_domain_name'] %>'
 
 
 ##
@@ -89,11 +91,25 @@ install() {
 }
 
 
-get_instance_id() {
-  instance_id=`curl --retry 5 --retry-delay 5 169.254.169.254/latest/meta-data/instance-id` 1>&2
-  echo instance_id is $instance_id
-}
+set_hostname() {
+  instance_id=`curl --silent --retry 5 --retry-delay 5 169.254.169.254/latest/meta-data/instance-id` 1>&2
+  local_ip=`curl --silent --retry 5 --retry-delay 5 169.254.169.254/latest/meta-data/local-ipv4` 1>&2
 
+  if [ "z$hostname" == "z" ]; then
+    hostname=$instance_id
+  fi
+  if [ "z${domain_name}" == "z" ]; then
+    domain_name="localdomain"
+  fi
+
+  fqdn="${hostname}.${domain_name}"
+  echo "setting hostname to $hostname ($fqdn)"
+  echo $hostname > /etc/hostname
+  hostname -F /etc/hostname
+
+  # allow a proper `hostname -f` to return something
+  echo "$local_ip $fqdn $hostname" >> /etc/hosts
+}
 
 install_chef() {
   if ! which chef-solo > /dev/null ; then
@@ -232,7 +248,7 @@ mkdir -p ${chef_dir}
 update
 install curl
 install git
-get_instance_id
+set_hostname
 install_chef
 update_repo
 configure_chef

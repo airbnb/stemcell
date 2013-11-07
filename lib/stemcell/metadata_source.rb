@@ -9,7 +9,9 @@ module Stemcell
     DEFAULT_OPTIONS = {
       'chef_environment' => 'production',
       'git_branch'       => 'production',
-      'count'            => 1
+      'count'            => 1,
+      'instance_hostname' => '',
+      'instance_domain_name' => '',
     }
 
     # Search for instance metadata in the following role attributes, with

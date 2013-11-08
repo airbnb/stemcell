@@ -12,6 +12,8 @@ module Stemcell
       'count'            => 1,
       'instance_hostname' => '',
       'instance_domain_name' => '',
+      'chef_package_source' => 'http://www.opscode.com/chef/download?p=${platform}&pv=${platform_version}&m=${arch}&v=${chef_version}&prerelease=false',
+      'chef_version'      => '11.4.0',
     }
 
     # Search for instance metadata in the following role attributes, with

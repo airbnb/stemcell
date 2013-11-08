@@ -125,6 +125,18 @@ module Stemcell
         :env  => 'CHEF_ROLE'
       },
       {
+        :name  => 'chef_version',
+        :desc  => "the chef version we will bootstrap on the box (defaults to 11.4.0)",
+        :type  => String,
+        :env   => 'CHEF_VERSION'
+      },
+      {
+        :name  => 'chef_package_source',
+        :desc  => "source of chef packages (defaults to https://opscode-omnibus-packages.s3.amazonaws.com)",
+        :type  => String,
+        :env   => 'CHEF_PACKAGE_SOURCE'
+      },
+      {
         :name  => 'chef_environment',
         :desc  => "chef environment in which this instance will run",
         :type  => String,

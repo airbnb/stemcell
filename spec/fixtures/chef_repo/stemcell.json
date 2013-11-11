@@ -1,0 +1,13 @@
+{
+  "defaults": {
+    "instance_type": "m1.small"
+  },
+  "backing_store": {
+    "instance_store": {
+      "image_id": "ami-d9d6a6b0"
+    }
+  },
+  "availability_zones": {
+    "us-east-1": ["us-east-1a"]
+  }
+}

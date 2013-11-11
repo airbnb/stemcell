@@ -1,0 +1,13 @@
+{
+  "instance_type": "m3.xlarge",
+  "security_groups": [
+    "all",
+    "default",
+    "override"
+  ],
+  "tags": {
+    "tag1": "tag1_value_override",
+    "tag2": "tag2_value",
+    "tag3": "tag3_value"
+  }
+}

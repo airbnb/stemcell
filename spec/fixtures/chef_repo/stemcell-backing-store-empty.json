@@ -1,0 +1,9 @@
+{
+  "defaults": {
+    "instance_type": "m1.small"
+  },
+  "backing_store": {},
+  "availability_zones": {
+    "us-east-1": ["us-east-1a"]
+  }
+}

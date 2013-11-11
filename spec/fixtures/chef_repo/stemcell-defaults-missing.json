@@ -1,0 +1,10 @@
+{
+  "backing_store": {
+    "instance_store": {
+      "baz": "woo"
+    }
+  },
+  "availability_zones": {
+    "us-east-1": ["us-east-1a"]
+  }
+}

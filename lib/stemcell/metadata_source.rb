@@ -1,10 +1,16 @@
-require 'chef'
-require 'json'
+require 'stemcell/metadata_source/chef_repository'
+require 'stemcell/metadata_source/configuration'
 
 module Stemcell
   class MetadataSource
     attr_reader :chef_root
-    attr_reader :default_options
+    attr_reader :config_filename
+
+    attr_reader :config
+    attr_reader :chef_repo
+
+    DEFAULT_CONFIG_FILENAME = 'stemcell.json'
+    DEFAULT_BACKING_STORE = 'instance_store'
 
     DEFAULT_OPTIONS = {
       'chef_environment' => 'production',
@@ -14,23 +20,23 @@ module Stemcell
       'instance_domain_name' => '',
     }
 
-    # Search for instance metadata in the following role attributes, with
-    # priority given to the keys at the head.
-    METADATA_ATTRIBUTES = [
-      :instance_metadata,
-      :stemcell
-    ]
-
-    def initialize(chef_root)
+    def initialize(chef_root, config_filename=DEFAULT_CONFIG_FILENAME)
       @chef_root = chef_root
+      @config_filename = config_filename
 
-      raise ArgumentError, "You must specify a chef root" unless chef_root
+      if chef_root.nil?
+        raise ArgumentError, "You must specify a chef repository"
+      end
+      if config_filename.nil?
+        raise ArgumentError, "You must specify a configuration file"
+      end
 
-      template_options = read_template
-      @default_options = DEFAULT_OPTIONS.merge(template_options['defaults'])
+      @config = Configuration.new(File.join(chef_root, config_filename))
+      @chef_repo = ChefRepository.new(chef_root)
+    end
 
-      @all_backing_store_options = template_options['backing_store']
-      @all_azs_by_region = template_options['availability_zones']
+    def default_options
+      DEFAULT_OPTIONS.merge(config.default_options)
     end
 
     def expand_role(role, environment, override_options={}, options={})
@@ -38,104 +44,49 @@ module Stemcell
       raise ArgumentError, "Missing chef environment" unless environment
       allow_empty_roles = options.fetch(:allow_empty_roles, false)
 
-      role_options = expand_role_options(role, environment)
+      # Step 1: Expand the role metadata
+
+      role_options = chef_repo.metadata_for_role(role, environment)
       role_empty   = role_options.nil? || role_options.empty?
 
       raise EmptyRoleError if !allow_empty_roles && role_empty
 
-      backing_store_options =
-        expand_backing_store_options(
-            default_options,
-            role_options,
-            override_options
-          )
+      # Step 2: Determine the backing store from available options.
 
-      # Merge all the options together in priority order
-      merged_options = default_options.dup
+      # This is determined distinctly from the merge sequence below because
+      # the backing store options must be available to the operation.
+
+      backing_store   = override_options['backing_store']
+      backing_store ||= role_options.to_hash['backing_store'] if role_options
+      backing_store ||= config.default_options['backing_store']
+      backing_store ||= DEFAULT_BACKING_STORE
+
+      # Step 3: Retrieve the backing store options from the defaults.
+
+      backing_store_options = config.options_for_backing_store(backing_store)
+      backing_store_options['backing_store'] = backing_store
+
+      # Step 4: Merge the options together in priority order.
+
+      merged_options = DEFAULT_OPTIONS.dup
+      merged_options.deep_merge!(config.default_options)
       merged_options.deep_merge!(backing_store_options)
       merged_options.deep_merge!(role_options) if role_options
       merged_options.deep_merge!(override_options)
 
-      # Add the AZ if not specified
-      if (region = merged_options['region'])
-        merged_options['availability_zone'] ||= random_az_in_region(region)
+      # Step 5: If no availability zone was specified, select one at random.
+
+      if merged_options['availability_zone'].nil? && merged_options['region']
+        merged_options['availability_zone'] ||=
+          config.random_az_for_region(merged_options['region'])
       end
 
-      # The chef environment and role used to expand the runlist takes
-      # priority over all other options.
+      # Step 6: Mandate that the environment and role were as specified.
+
       merged_options['chef_environment'] = environment
-      merged_options['chef_role']        = role
+      merged_options['chef_role'] = role
 
       merged_options
-    end
-
-    private
-
-    def read_template
-      begin
-        template_path = File.join(chef_root, 'stemcell.json')
-        template_options = JSON.parse(IO.read(template_path))
-      rescue Errno::ENOENT
-        raise NoTemplateError
-      rescue => e
-        raise TemplateParseError, e.message
-      end
-
-      errors = []
-      unless template_options.include?('defaults')
-        errors << 'missing required section "defaults"; should be a hash containing default launch options'
-      end
-
-      if template_options['availability_zones'].nil?
-        errors << 'missing or empty section "availability zones"'
-        errors << '"availability_zones" should be a hash from region name => list of allowed zones in that region'
-      end
-
-      if template_options['backing_store'].nil? or template_options['backing_store'].empty?
-        errors << 'missing or empty section "backing_store"'
-        errors << '"backing_store" should be a hash from store type (like "ebs") => hash of options for that store'
-      end
-
-      unless errors.empty?
-        raise TemplateParseError, errors.join("; ")
-      end
-
-       return template_options
-    end
-
-    def expand_role_options(chef_role, chef_environment)
-      Chef::Config[:role_path] = File.join(chef_root, 'roles')
-      Chef::Config[:data_bag_path] = File.join(chef_root, 'data_bags')
-
-      run_list = Chef::RunList.new
-      run_list << "role[#{chef_role}]"
-
-      expansion = run_list.expand(chef_environment, 'disk')
-      raise RoleExpansionError if expansion.errors?
-
-      default_attrs = expansion.default_attrs
-      override_attrs = expansion.override_attrs
-
-      merged_attrs = default_attrs.merge(override_attrs)
-      METADATA_ATTRIBUTES.inject(nil) { |r, key| r || merged_attrs[key] }
-    end
-
-    def expand_backing_store_options(default_opts, role_opts, override_opts)
-      backing_store   = override_opts['backing_store']
-      backing_store ||= role_opts.to_hash['backing_store'] if role_opts
-      backing_store ||= default_opts['backing_store']
-      backing_store ||= 'instance_store'
-
-      backing_store_options = @all_backing_store_options[backing_store]
-      if backing_store_options.nil?
-        raise Stemcell::UnknownBackingStoreError.new(backing_store)
-      end
-      backing_store_options
-    end
-
-    def random_az_in_region(region)
-      possible_azs = @all_azs_by_region[region] || []
-      possible_azs.sample
     end
   end
 end

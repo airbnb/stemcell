@@ -70,12 +70,12 @@ module Stemcell
 
     def initialize_launcher
       @launcher = MetadataLauncher.new(:chef_root => chef_root)
-    rescue NoTemplateError
+    rescue MissingMetadataConfigError
       puts "Couldn't find `stemcell.json` in the local chef repo.".red
       puts "You must specify the root of the local checkout of your chef " \
            "respository by using the --local-chef-root options or " \
            "setting the LOCAL_CHEF_ROOT environment variable."
-    rescue TemplateParseError => e
+    rescue MetadataConfigParseError => e
       error "Couldn't parse the `stemcell.json` file: #{e.message}"
     end
 

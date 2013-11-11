@@ -4,6 +4,8 @@ module Stemcell
   class MetadataSource
 
     class ChefRepository
+      include Chef::Mixin::DeepMerge
+
       attr_reader :chef_root
 
       # Search for instance metadata in the following role attributes, with
@@ -25,7 +27,7 @@ module Stemcell
       # This method will return nil if the role has no stemcell metdata.
       def metadata_for_role(chef_role, chef_environment)
         default_attrs, override_attrs = expand_role(chef_role, chef_environment)
-        merged_attrs = default_attrs.merge(override_attrs)
+        merged_attrs = deep_merge!(override_attrs, default_attrs)
         METADATA_ATTRIBUTES.inject(nil) { |r, key| r || merged_attrs[key] }
       end
 

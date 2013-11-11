@@ -3,6 +3,8 @@ require 'stemcell/metadata_source/configuration'
 
 module Stemcell
   class MetadataSource
+    include Chef::Mixin::DeepMerge
+
     attr_reader :chef_root
     attr_reader :config_filename
 
@@ -69,10 +71,10 @@ module Stemcell
       # Step 4: Merge the options together in priority order.
 
       merged_options = DEFAULT_OPTIONS.dup
-      merged_options.deep_merge!(config.default_options)
-      merged_options.deep_merge!(backing_store_options)
-      merged_options.deep_merge!(role_options) if role_options
-      merged_options.deep_merge!(override_options)
+      merged_options.merge!(config.default_options)
+      merged_options.merge!(backing_store_options)
+      merged_options.merge!(role_options.to_hash) if role_options
+      merged_options.merge!(override_options)
 
       # Step 5: If no availability zone was specified, select one at random.
 

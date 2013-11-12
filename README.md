@@ -72,7 +72,7 @@ $ stemcell --help
 ### Watching install:
 
 ```bash
-$ ssh ubuntu@$IP 'tail -f /var/log/init*'
+$ stemcell $your_chef_role --tail
 ```
 
 ### Terminating:

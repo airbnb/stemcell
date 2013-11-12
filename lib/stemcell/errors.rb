@@ -2,8 +2,9 @@ module Stemcell
   # This is the class from which all stemcell errors descend.
   class Error < StandardError; end
 
-  class NoTemplateError < Error; end
-  class TemplateParseError < Error; end
+  class MissingMetadataConfigError < Error; end
+  class MetadataConfigParseError < Error; end
+
   class RoleExpansionError < Error; end
   class EmptyRoleError < Error; end
 

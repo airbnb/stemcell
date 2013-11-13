@@ -30,6 +30,8 @@ module Stemcell
     ]
 
     LAUNCH_PARAMETERS = [
+      'chef_package_source',
+      'chef_version',
       'chef_role',
       'chef_environment',
       'chef_data_bag_secret',

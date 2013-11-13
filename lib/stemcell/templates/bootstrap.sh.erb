@@ -57,8 +57,6 @@ echo $$ > ${PIDFILE}
 ## settings
 ##
 
-
-chef_version=11.4.0
 chef_dir=/etc/chef
 converge=/usr/local/bin/first_converge
 role=<%= opts['chef_role'] %>
@@ -112,14 +110,21 @@ set_hostname() {
 }
 
 install_chef() {
-  if ! which chef-solo > /dev/null ; then
-    echo installing chef via omnibus...
-    curl -L --silent https://www.opscode.com/chef/install.sh | sudo bash -s -- -v $chef_version  1>&2
-  else
-    echo chef is already installed
-  fi
-}
+  chef_version=<%= opts['chef_version'] %>
+  platform=`lsb_release -s -i | tr '[:upper:]' '[:lower:]'`
+  platform_version=`lsb_release -s -r`
+  arch=`uname -m`
+  package_url="<%= opts['chef_package_source'] %>"
 
+  package_local="/tmp/chef_${chef_version}.deb"
+  echo "Downloading chef from $package_url"
+  wget $package_url -O $package_local
+
+  echo "Installing chef $chef_version"
+  dpkg -i $package_local
+
+  rm $package_local
+}
 
 update_repo() {
   echo -e "$git_key" > $keyfile

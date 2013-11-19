@@ -21,8 +21,8 @@ CHEF_ENVIRONMENT=default
 export LOCAL_CHEF_ROOT=/path/to/your/local/chef/repository
 
 # The git origin is the publically-accessible version of the
-#   local chef root; we use a github enterprise server
-export GIT_ORIGIN=git@git.airbnb.com:airbnb/chef.git
+#   local chef root
+export GIT_ORIGIN=git@github.com:airbnb/chef.git
 
 # The git branch to use by default
 export GIT_BRANCH=production

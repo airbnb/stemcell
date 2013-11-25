@@ -94,6 +94,8 @@ module Stemcell
         'created_by' => opts.fetch('user', ENV['USER']),
         'stemcell' => VERSION,
       }
+      # Short name if we're in production
+      tags['Name'] = opts['chef_role'] if opts['chef_environment'] == 'production'
       tags.merge!(opts['tags']) if opts['tags']
 
       # generate launch options

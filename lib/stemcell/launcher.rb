@@ -256,7 +256,7 @@ module Stemcell
     # attempt to accept keys as file paths
     def try_file(opt="")
       begin
-        return File.read(opt)
+        return File.read(opt.sub(/^~\//, ENV['HOME']+'/'))
       rescue Object => e
         return opt
       end

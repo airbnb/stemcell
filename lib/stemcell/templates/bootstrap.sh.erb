@@ -18,39 +18,12 @@ if [ $UID != 0 ]; then
   exit 1
 fi
 
-## Only run once at a time
-# http://stackoverflow.com/questions/959475/shell-fragment-to-make-sure-only-one-instance-a-shell-script-runs-at-any-given-t
-# slightly modified to use $$
-# to run it I must set +e
-
-SCRIPTNAME=`basename $0`
-PIDFILE=/var/run/${SCRIPTNAME}.pid
-
-set +e
-if [ -f ${PIDFILE} ]; then
-   #verify if the process is actually still running under this pid
-   OLDPID=`cat ${PIDFILE}`
-   RESULT=`ps -ef | grep ${OLDPID} | grep ${SCRIPTNAME}`
-
-   if [ -n "${RESULT}" ]; then
-     echo "Script already running! Exiting"
-     exit 255
-   fi
-
-fi
-### ---
-set -e
-
 
 # redirect stdout to /var/log/init
 exec >> /var/log/init
 
 # redirect stderr to /var/log/init.err
 exec 2>> /var/log/init.err
-
-#grab pid of this process and update the pid file with it
-echo $$ > ${PIDFILE}
-
 
 
 ##
@@ -270,9 +243,5 @@ configure_chef_daemon
 ## exit
 ##
 
-
-if [ -f ${PIDFILE} ]; then
-    rm ${PIDFILE}
-fi
 
 echo "<%= last_bootstrap_line %>"

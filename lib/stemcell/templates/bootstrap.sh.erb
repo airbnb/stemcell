@@ -43,10 +43,10 @@ set -e
 
 
 # redirect stdout to /var/log/init
-exec > /var/log/init
+exec >> /var/log/init
 
 # redirect stderr to /var/log/init.err
-exec 2> /var/log/init.err
+exec 2>> /var/log/init.err
 
 #grab pid of this process and update the pid file with it
 echo $$ > ${PIDFILE}

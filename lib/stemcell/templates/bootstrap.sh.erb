@@ -67,6 +67,8 @@ git_key='<%= opts['git_key'] %>'
 data_bag_secret='<%= opts["chef_data_bag_secret"] %>'
 hostname='<%= opts['instance_hostname'] %>'
 domain_name='<%= opts['instance_domain_name'] %>'
+chef_version='<%= opts['chef_version'] %>'
+package_url="<%= opts['chef_package_source'] %>"
 
 
 ##
@@ -110,20 +112,20 @@ set_hostname() {
 }
 
 install_chef() {
-  chef_version=<%= opts['chef_version'] %>
-  platform=`lsb_release -s -i | tr '[:upper:]' '[:lower:]'`
-  platform_version=`lsb_release -s -r`
-  arch=`uname -m`
-  package_url="<%= opts['chef_package_source'] %>"
-
-  package_local="/tmp/chef_${chef_version}.deb"
-  echo "Downloading chef from $package_url"
-  wget $package_url -O $package_local
-
-  echo "Installing chef $chef_version"
-  dpkg -i $package_local
-
-  rm $package_local
+  # check to see if chef is already installed
+  if ! which chef-solo > /dev/null ; then
+    platform=`lsb_release -s -i | tr '[:upper:]' '[:lower:]'`
+    platform_version=`lsb_release -s -r`
+    arch=`uname -m`
+    package_local="/tmp/chef_${chef_version}.deb"
+    echo "Downloading chef from $package_url"
+    wget $package_url -O $package_local
+    echo "Installing chef $chef_version"
+    dpkg -i $package_local
+    rm $package_local
+  else
+    echo chef is already installed
+  fi
 }
 
 update_repo() {

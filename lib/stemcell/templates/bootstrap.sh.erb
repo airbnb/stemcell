@@ -274,7 +274,5 @@ configure_chef_daemon
 if [ -f ${PIDFILE} ]; then
     rm ${PIDFILE}
 fi
-# I can delete the cron too
-rm -f /etc/cron.d/ec2admin_get_callback1
 
 echo "<%= last_bootstrap_line %>"

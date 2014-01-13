@@ -41,7 +41,6 @@ data_bag_secret='<%= opts["chef_data_bag_secret"] %>'
 hostname='<%= opts['instance_hostname'] %>'
 domain_name='<%= opts['instance_domain_name'] %>'
 chef_version='<%= opts['chef_version'] %>'
-package_url="<%= opts['chef_package_source'] %>"
 
 
 ##
@@ -91,6 +90,7 @@ install_chef() {
     platform_version=`lsb_release -s -r`
     arch=`uname -m`
     package_local="/tmp/chef_${chef_version}.deb"
+    package_url="<%= opts['chef_package_source'] %>"
     echo "Downloading chef from $package_url"
     wget $package_url -O $package_local
     echo "Installing chef $chef_version"

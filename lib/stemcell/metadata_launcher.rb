@@ -64,6 +64,7 @@ module Stemcell
       puts "\nYou're about to launch instance(s) with the following options:\n\n"
 
       options.keys.sort.each do |key|
+        next if key == "aws_secret_key"
         value = options[key]
         next unless value
         spaces = " " * (23 - key.length)

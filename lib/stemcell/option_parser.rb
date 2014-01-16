@@ -32,7 +32,8 @@ module Stemcell
         :name  => 'aws_secret_key',
         :desc  => "aws secret key",
         :type  => String,
-        :env   => 'AWS_SECRET_KEY'
+        :env   => 'AWS_SECRET_KEY',
+        :hide  => true
       },
       {
         :name  => 'region',
@@ -221,7 +222,11 @@ module Stemcell
 
         _defns.each do |defn|
           # Prioritize the environment variable, then the given default
-          default = ENV[defn[:env]] || _this.defaults[defn[:name]]
+          if defn[:hide]
+            default = "<hidden>"
+          else
+            default = ENV[defn[:env]] || _this.defaults[defn[:name]]
+          end
 
           opt(
             defn[:name],
@@ -233,6 +238,13 @@ module Stemcell
 
         # Prevent trollop from showing its help screen
         opt('help', 'help', :short => :l) if _this.override_help
+      end
+
+      # Populate the hidden defaults. Some (like aws secret key) is :hidden so that Trollop wont print that into stdout
+      _defns.each do |defn|
+        if defn[:hide] && options[defn[:name]] == "<hidden>"
+          options[defn[:name]] = ENV[defn[:env]] || _this.defaults[defn[:name]]
+        end
       end
 
       # convert tags from string to ruby hash

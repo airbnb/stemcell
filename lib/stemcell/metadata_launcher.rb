@@ -51,11 +51,18 @@ module Stemcell
     end
 
     def validate_options(options={})
-      [ Launcher::REQUIRED_OPTIONS,
-        Launcher::REQUIRED_LAUNCH_PARAMETERS
-      ].flatten.each do |arg|
-        if options[arg].nil? or !options[arg]
-          raise Stemcell::MissingStemcellOptionError.new(arg)
+      required_options = (Launcher::REQUIRED_OPTIONS + Launcher::REQUIRED_LAUNCH_PARAMETERS)
+      required_options.each do |required|
+
+        # Array signals that at least one argument inside array is required
+        if required.is_a?(Array)
+          unless required.any? { |option| options.include?(option) && !options[option].nil? }
+            raise Stemcell::MissingStemcellOptionError.new(required)
+          end
+        else
+          unless options.include?(required) && options[required] != nil
+            raise Stemcell::MissingStemcellOptionError.new(required)
+          end
         end
       end
     end

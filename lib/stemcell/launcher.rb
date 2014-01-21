@@ -25,7 +25,7 @@ module Stemcell
       'instance_type',
       'image_id',
       'security_groups',
-      'availability_zone',
+      ['availability_zone', 'vpc_subnet_id'],
       'count'
     ]
 
@@ -51,7 +51,9 @@ module Stemcell
       'ebs_optimized',
       'block_device_mappings',
       'ephemeral_devices',
-      'placement_group'
+      'placement_group',
+      'vpc_subnet_id',
+      'private_ip_address'
     ]
 
     TEMPLATE_PATH = '../templates/bootstrap.sh.erb'
@@ -143,6 +145,14 @@ module Stemcell
         end
       end
 
+      if opts['vpc_subnet_id']
+        launch_options[:subnet] = opts['vpc_subnet_id']
+      end
+
+      if opts['vpc_subnet_id'] && opts['private_ip_address']
+        launch_options[:private_ip_address] = opts['private_ip_address']
+      end
+
       #
 
       # generate user data script to bootstrap instance, include in launch
@@ -194,6 +204,24 @@ module Stemcell
       return generated_template
     end
 
+    def verify_required_options(params,required_options)
+      @log.debug "params is #{params}"
+      @log.debug "required_options are #{required_options}"
+      required_options.each do |required|
+
+        # Array signals that at least one argument inside array is required
+        if required.is_a?(Array)
+          unless required.any? { |option| params.include?(option) && !params[option].nil? }
+            raise Stemcell::MissingStemcellOptionError.new(required)
+          end
+        else
+          unless params.include?(required) && params[required] != nil
+            raise Stemcell::MissingStemcellOptionError.new(required)
+          end
+        end
+      end
+    end
+
     private
 
     def print_run_info(instances)
@@ -201,6 +229,9 @@ module Stemcell
       instances.each do |instance|
         puts "\tinstance_id: #{instance.instance_id}"
         puts "\tpublic ip:   #{instance.public_ip_address}"
+        if instance.private_ip_address
+          puts "\tprivate ip:  #{instance.private_ip_address}"
+        end
         puts
       end
       puts "install logs will be in /var/log/init and /var/log/init.err"
@@ -223,16 +254,6 @@ module Stemcell
       end
 
       @log.info "all instances in running state"
-    end
-
-    def verify_required_options(params,required_options)
-      @log.debug "params is #{params}"
-      @log.debug "required_options are #{required_options}"
-      required_options.each do |required|
-        unless params.include?(required)
-          raise ArgumentError, "you need to provide option #{required}"
-        end
-      end
     end
 
     def do_launch(opts={})
@@ -258,6 +279,7 @@ module Stemcell
       begin
         return File.read(opt)
       rescue Object => e
+        @log.warn "Could not read file #{opt}"
         return opt
       end
     end

@@ -18,6 +18,8 @@ module Stemcell
       environment = expand_environment(override_options)
       launch_options = determine_options(role, environment, override_options)
 
+      create_launcher(launch_options)
+
       validate_options(launch_options)
       describe_instance(launch_options)
       invoke_launcher(launch_options)
@@ -51,13 +53,7 @@ module Stemcell
     end
 
     def validate_options(options={})
-      [ Launcher::REQUIRED_OPTIONS,
-        Launcher::REQUIRED_LAUNCH_PARAMETERS
-      ].flatten.each do |arg|
-        if options[arg].nil? or !options[arg]
-          raise Stemcell::MissingStemcellOptionError.new(arg)
-        end
-      end
+      @launcher.verify_required_options(options, Launcher::REQUIRED_LAUNCH_PARAMETERS)
     end
 
     def describe_instance(options={})
@@ -91,19 +87,22 @@ module Stemcell
       end
     end
 
-    def invoke_launcher(options={})
-      launcher = Launcher.new({
+    def create_launcher(options)
+      @launcher = Launcher.new({
         'aws_access_key' => options['aws_access_key'],
         'aws_secret_key' => options['aws_secret_key'],
         'region'         => options['region'],
       })
+    end
+
+    def invoke_launcher(options={})
       # Slice off just the options used for launching.
       launch_options = {}
       Launcher::LAUNCH_PARAMETERS.each do |a|
         launch_options[a] = options[a]
       end
       # Create the instance from these options.
-      launcher.launch(launch_options)
+      @launcher.launch(launch_options)
     end
   end
 end

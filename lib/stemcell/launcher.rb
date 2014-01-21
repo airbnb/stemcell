@@ -25,7 +25,7 @@ module Stemcell
       'instance_type',
       'image_id',
       'security_groups',
-      'availability_zone',
+      ['availability_zone', 'vpc_subnet_id'],
       'count'
     ]
 
@@ -51,7 +51,8 @@ module Stemcell
       'ebs_optimized',
       'block_device_mappings',
       'ephemeral_devices',
-      'placement_group'
+      'placement_group',
+      'vpc_subnet_id'
     ]
 
     TEMPLATE_PATH = '../templates/bootstrap.sh.erb'
@@ -81,7 +82,6 @@ module Stemcell
 
 
     def launch(opts={})
-      verify_required_options(opts, REQUIRED_LAUNCH_PARAMETERS)
 
       # attempt to accept keys as file paths
       opts['git_key'] = try_file(opts['git_key'])
@@ -143,6 +143,10 @@ module Stemcell
         end
       end
 
+      if opts['vpc_subnet_id']
+        launch_options[:subnet] = opts['vpc_subnet_id']
+      end
+
       #
 
       # generate user data script to bootstrap instance, include in launch
@@ -201,6 +205,9 @@ module Stemcell
       instances.each do |instance|
         puts "\tinstance_id: #{instance.instance_id}"
         puts "\tpublic ip:   #{instance.public_ip_address}"
+        if instance.private_ip_address
+          puts "\tprivate ip:  #{instance.private_ip_address}"
+        end
         puts
       end
       puts "install logs will be in /var/log/init and /var/log/init.err"
@@ -223,16 +230,6 @@ module Stemcell
       end
 
       @log.info "all instances in running state"
-    end
-
-    def verify_required_options(params,required_options)
-      @log.debug "params is #{params}"
-      @log.debug "required_options are #{required_options}"
-      required_options.each do |required|
-        unless params.include?(required)
-          raise ArgumentError, "you need to provide option #{required}"
-        end
-      end
     end
 
     def do_launch(opts={})
@@ -258,6 +255,7 @@ module Stemcell
       begin
         return File.read(opt)
       rescue Object => e
+        @log.warn "Could not read file #{opt}"
         return opt
       end
     end

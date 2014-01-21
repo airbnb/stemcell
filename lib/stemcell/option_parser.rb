@@ -72,6 +72,12 @@ module Stemcell
         :env   => 'AVAILABILITY_ZONE'
       },
       {
+        :name  => 'vpc_subnet_id',
+        :desc  => "VPC subnet id in which to launch instances",
+        :type  => String,
+        :env   => 'VPC_SUBNET_ID'
+      },
+      {
         :name  => 'tags',
         :desc  => "comma-separated list of key=value pairs to apply",
         :type  => String,

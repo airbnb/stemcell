@@ -56,18 +56,12 @@ module Stemcell
 
         # Array signals that at least one argument inside array is required
         if required.is_a?(Array)
-          found = false
-          required.each do |name|
-            if options.include?(name) && options[name] != nil
-              found = true
-            end
-          end
-          if !found
-            raise Stemcell::MissingStemcellOptionError(required)
+          unless required.any? { |option| options.include?(option) && !options[option].nil? }
+            raise Stemcell::MissingStemcellOptionError.new(required)
           end
         else
           unless options.include?(required) && options[required] != nil
-            raise Stemcell::MissingStemcellOptionError(required)
+            raise Stemcell::MissingStemcellOptionError.new(required)
           end
         end
       end

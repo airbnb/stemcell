@@ -82,6 +82,7 @@ module Stemcell
 
 
     def launch(opts={})
+      verify_required_options(opts, REQUIRED_LAUNCH_PARAMETERS)
 
       # attempt to accept keys as file paths
       opts['git_key'] = try_file(opts['git_key'])
@@ -196,6 +197,24 @@ module Stemcell
       generated_template = erb_template.result(binding)
       @log.debug "genereated template is #{generated_template}"
       return generated_template
+    end
+
+    def verify_required_options(params,required_options)
+      @log.debug "params is #{params}"
+      @log.debug "required_options are #{required_options}"
+      required_options.each do |required|
+
+        # Array signals that at least one argument inside array is required
+        if required.is_a?(Array)
+          unless required.any? { |option| params.include?(option) && !params[option].nil? }
+            raise Stemcell::MissingStemcellOptionError.new(required)
+          end
+        else
+          unless params.include?(required) && params[required] != nil
+            raise Stemcell::MissingStemcellOptionError.new(required)
+          end
+        end
+      end
     end
 
     private

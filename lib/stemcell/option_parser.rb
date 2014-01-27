@@ -205,6 +205,12 @@ module Stemcell
         :type  => nil,
         :env   => 'NON_INTERACTIVE',
         :short => :f
+      },
+      {
+        :name  => 'private_ip_address',
+        :desc  => "Private ip address in VPC",
+        :type  => String,
+        :env   => 'PRIVATE_IP_ADDRESS'
       }
     ]
 

@@ -52,7 +52,8 @@ module Stemcell
       'block_device_mappings',
       'ephemeral_devices',
       'placement_group',
-      'vpc_subnet_id'
+      'vpc_subnet_id',
+      'private_ip_address'
     ]
 
     TEMPLATE_PATH = '../templates/bootstrap.sh.erb'
@@ -146,6 +147,10 @@ module Stemcell
 
       if opts['vpc_subnet_id']
         launch_options[:subnet] = opts['vpc_subnet_id']
+      end
+
+      if opts['vpc_subnet_id'] && opts['private_ip_address']
+        launch_options[:private_ip_address] = opts['private_ip_address']
       end
 
       #

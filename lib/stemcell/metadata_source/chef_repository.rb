@@ -27,7 +27,8 @@ module Stemcell
       # This method will return nil if the role has no stemcell metdata.
       def metadata_for_role(chef_role, chef_environment)
         default_attrs, override_attrs = expand_role(chef_role, chef_environment)
-        merged_attrs = deep_merge!(override_attrs, default_attrs)
+        # hash_only_merge is how chef combines override_attrs and default_attrs so that overrides "win"
+        merged_attrs = hash_only_merge!(default_attrs, override_attrs)
         METADATA_ATTRIBUTES.inject(nil) { |r, key| r || merged_attrs[key] }
       end
 

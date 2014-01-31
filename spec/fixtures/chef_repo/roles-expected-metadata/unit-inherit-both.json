@@ -2,8 +2,6 @@
   "instance_type": "m3.xlarge",
   "security_groups": [
     "all",
-    "base",
-    "default",
     "override"
   ],
   "tags": {

@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    stemcell (0.6.4)
+    stemcell (0.7.0)
       aws-creds (~> 0.2.2)
       aws-sdk (~> 1.9)
       chef (~> 11.4.0)

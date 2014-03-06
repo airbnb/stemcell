@@ -121,6 +121,9 @@ update_repo() {
 
 
 configure_chef() {
+  echo "Setting up ec2 hint for Chef Ohai"
+  mkdir -p /etc/chef/ohai/hints/
+  touch /etc/chef/ohai/hints/ec2.json
   echo "saving current origin ($origin), branch ($branch), role ($role), and environment ($environment)"
   echo "$origin" > $originfile
   chmod 644 $originfile

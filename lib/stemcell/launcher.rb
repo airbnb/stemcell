@@ -1,7 +1,7 @@
 require 'aws-sdk'
 require 'logger'
 require 'erb'
-
+require 'pp'
 require "stemcell/version"
 require "stemcell/option_parser"
 
@@ -103,11 +103,26 @@ module Stemcell
       # generate launch options
       launch_options = {
         :image_id => opts['image_id'],
-        :security_groups => opts['security_groups'],
         :instance_type => opts['instance_type'],
         :key_name => opts['key_name'],
         :count => opts['count'],
       }
+
+      if opts['security_groups'].kind_of?(Array)
+        opts['security_groups'].each do |name|
+          if name.start_with?("sg-")
+            if launch_options[:security_group_ids].nil?
+              launch_options[:security_group_ids] = []
+            end
+            launch_options[:security_group_ids] << name
+          else
+            if launch_options[:security_groups].nil?
+              launch_options[:security_groups] = []
+            end
+            launch_options[:security_groups] << name
+          end
+        end
+      end
 
       # specify availability zone (optional)
       if opts['availability_zone']

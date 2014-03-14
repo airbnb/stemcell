@@ -184,6 +184,7 @@ module Stemcell
       # wait for aws to report instance stats
       if opts.fetch('wait', true)
         wait(instances)
+        log_instances_to_ocular(instances, opts['chef_role'])
         print_run_info(instances)
         @log.info "launched instances successfully"
       end
@@ -238,6 +239,27 @@ module Stemcell
     end
 
     private
+
+    def log_instances_to_ocular(instances, role)
+
+      instances.each do |instance|
+
+        data = {}
+        data["role"] = role
+        data["state"] = "bootstrapped"
+        data["ip"] = instance.private_ip_address
+        data["ec2"] = {
+          "instance_id" => instance.instance_id
+        }
+        connection = Net::HTTP.new("ocular.us-east-1.applifier.info", 2100)
+        result = connection.post('/', data.to_json)
+        if result.code.to_i >= 200 and result.code.to_i < 300
+          puts "Updated instance #{instance.instance_id} to ocular: #{result.body}"
+        else
+          puts "Error updating instance #{instance.instance_id} to ocular: #{result.body}"
+        end
+      end
+    end
 
     def print_run_info(instances)
       puts "\nhere is the info for what's launched:"

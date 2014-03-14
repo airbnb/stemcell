@@ -8,7 +8,7 @@ module Stemcell
     attr_reader :chef_root
     attr_reader :chef_role
 
-    VERSION_STRING = "Stemcell (c) 2012-2013 Airbnb."
+    VERSION_STRING = "Stemcell (c) 2012-2013 Airbnb with Applifier branch."
     BANNER_STRING  = "Launch instances from metadata stored in roles!\n" \
                      "Usage: stemcell [chef role] [options]"
 

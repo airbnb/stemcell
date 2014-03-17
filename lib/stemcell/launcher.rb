@@ -53,7 +53,8 @@ module Stemcell
       'ephemeral_devices',
       'placement_group',
       'vpc_subnet_id',
-      'private_ip_address'
+      'private_ip_address',
+      'elastic_ip_address'
     ]
 
     TEMPLATE_PATH = '../templates/bootstrap.sh.erb'

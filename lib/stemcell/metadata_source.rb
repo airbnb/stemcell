@@ -78,9 +78,9 @@ module Stemcell
       merged_options.merge!(role_options.to_hash) if role_options
       merged_options.merge!(override_options)
 
-      # Step 5: If no availability zone was specified, select one at random.
+      # Step 5: If no availability zone and no vpc_subnet_id was specified, select one at random.
 
-      if merged_options['availability_zone'].nil? && merged_options['region']
+      if merged_options['availability_zone'].nil? && merged_options['region'] && merged_options['vpc_subnet_id'].nil?
         merged_options['availability_zone'] ||=
           config.random_az_for_region(merged_options['region'])
       end

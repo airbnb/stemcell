@@ -16,12 +16,12 @@ Gem::Specification.new do |s|
   s.test_files    = s.files.grep(%r{^(test|spec|features)/})
   s.require_paths = ["lib"]
 
-  s.add_runtime_dependency 'aws-sdk',   '~> 1.9'
-  s.add_runtime_dependency 'net-ssh',   '~> 2.6'
+  s.add_runtime_dependency 'aws-sdk',   '~> 1.34'
+  s.add_runtime_dependency 'net-ssh',   '~> 2.8'
   s.add_runtime_dependency 'chef',      '~> 11.4.0'
 
   s.add_runtime_dependency 'trollop',   '~> 2.0'
-  s.add_runtime_dependency 'aws-creds', '~> 0.2.2'
+  s.add_runtime_dependency 'aws-creds', '~> 0.2.3'
   s.add_runtime_dependency 'colored',   '~> 1.2'
   s.add_runtime_dependency 'json',      '~> 1.7.7'
 end

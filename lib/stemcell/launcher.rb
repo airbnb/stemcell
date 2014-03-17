@@ -1,7 +1,7 @@
 require 'aws-sdk'
 require 'logger'
 require 'erb'
-
+require 'pp'
 require "stemcell/version"
 require "stemcell/option_parser"
 
@@ -25,7 +25,7 @@ module Stemcell
       'instance_type',
       'image_id',
       'security_groups',
-      'availability_zone',
+      ['availability_zone', 'vpc_subnet_id'],
       'count'
     ]
 
@@ -51,7 +51,10 @@ module Stemcell
       'ebs_optimized',
       'block_device_mappings',
       'ephemeral_devices',
-      'placement_group'
+      'placement_group',
+      'vpc_subnet_id',
+      'private_ip_address',
+      'elastic_ip_address'
     ]
 
     TEMPLATE_PATH = '../templates/bootstrap.sh.erb'
@@ -101,11 +104,26 @@ module Stemcell
       # generate launch options
       launch_options = {
         :image_id => opts['image_id'],
-        :security_groups => opts['security_groups'],
         :instance_type => opts['instance_type'],
         :key_name => opts['key_name'],
         :count => opts['count'],
       }
+
+      if opts['security_groups'].kind_of?(Array)
+        opts['security_groups'].each do |name|
+          if name.start_with?("sg-")
+            if launch_options[:security_group_ids].nil?
+              launch_options[:security_group_ids] = []
+            end
+            launch_options[:security_group_ids] << name
+          else
+            if launch_options[:security_groups].nil?
+              launch_options[:security_groups] = []
+            end
+            launch_options[:security_groups] << name
+          end
+        end
+      end
 
       # specify availability zone (optional)
       if opts['availability_zone']
@@ -143,6 +161,14 @@ module Stemcell
         end
       end
 
+      if opts['vpc_subnet_id']
+        launch_options[:subnet] = opts['vpc_subnet_id']
+      end
+
+      if opts['vpc_subnet_id'] && opts['private_ip_address']
+        launch_options[:private_ip_address] = opts['private_ip_address']
+      end
+
       #
 
       # generate user data script to bootstrap instance, include in launch
@@ -159,6 +185,8 @@ module Stemcell
       # wait for aws to report instance stats
       if opts.fetch('wait', true)
         wait(instances)
+        bind_elastic_ip_address(instances, opts['elastic_ip_address']) if opts['elastic_ip_address']
+        log_instances_to_ocular(instances, opts['chef_role'])
         print_run_info(instances)
         @log.info "launched instances successfully"
       end
@@ -194,13 +222,69 @@ module Stemcell
       return generated_template
     end
 
+    def verify_required_options(params,required_options)
+      @log.debug "params is #{params}"
+      @log.debug "required_options are #{required_options}"
+      required_options.each do |required|
+
+        # Array signals that at least one argument inside array is required
+        if required.is_a?(Array)
+          unless required.any? { |option| params.include?(option) && !params[option].nil? }
+            raise Stemcell::MissingStemcellOptionError.new(required)
+          end
+        else
+          unless params.include?(required) && params[required] != nil
+            raise Stemcell::MissingStemcellOptionError.new(required)
+          end
+        end
+      end
+
+      if params['count'] > 1 and params['elastic_ip_address']
+        raise "Can't have elastic ip address when launching more than one instance"
+      end
+    end
+
     private
+
+    def bind_elastic_ip_address(instances, ip_address)
+      if instances.length > 1
+        @log.error "ERROR: More than one instance launched so can't bind elastic ip address"
+      else
+        @log.info "Binding elastic ip address #{ip_address} to instance..."
+        ret = instances[0].associate_elastic_ip(@ec2.elastic_ips[ip_address])
+        @log.info "Elastic ip #{ip_address} associated: #{ret}"
+      end
+    end
+
+    def log_instances_to_ocular(instances, role)
+
+      instances.each do |instance|
+
+        data = {}
+        data["role"] = role
+        data["state"] = "bootstrapped"
+        data["ip"] = instance.private_ip_address
+        data["ec2"] = {
+          "instance_id" => instance.instance_id
+        }
+        connection = Net::HTTP.new("ocular.us-east-1.applifier.info", 2100)
+        result = connection.post('/', data.to_json)
+        if result.code.to_i >= 200 and result.code.to_i < 300
+          @log.info "Updated instance #{instance.instance_id} to ocular: #{result.body}"
+        else
+          @log.info "Error updating instance #{instance.instance_id} to ocular: #{result.body}"
+        end
+      end
+    end
 
     def print_run_info(instances)
       puts "\nhere is the info for what's launched:"
       instances.each do |instance|
         puts "\tinstance_id: #{instance.instance_id}"
         puts "\tpublic ip:   #{instance.public_ip_address}"
+        if instance.private_ip_address
+          puts "\tprivate ip:  #{instance.private_ip_address}"
+        end
         puts
       end
       puts "install logs will be in /var/log/init and /var/log/init.err"
@@ -223,16 +307,6 @@ module Stemcell
       end
 
       @log.info "all instances in running state"
-    end
-
-    def verify_required_options(params,required_options)
-      @log.debug "params is #{params}"
-      @log.debug "required_options are #{required_options}"
-      required_options.each do |required|
-        unless params.include?(required)
-          raise ArgumentError, "you need to provide option #{required}"
-        end
-      end
     end
 
     def do_launch(opts={})
@@ -258,6 +332,7 @@ module Stemcell
       begin
         return File.read(opt)
       rescue Object => e
+        @log.warn "Could not read file #{opt}"
         return opt
       end
     end

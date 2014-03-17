@@ -72,6 +72,12 @@ module Stemcell
         :env   => 'AVAILABILITY_ZONE'
       },
       {
+        :name  => 'vpc_subnet_id',
+        :desc  => "VPC subnet id in which to launch instances",
+        :type  => String,
+        :env   => 'VPC_SUBNET_ID'
+      },
+      {
         :name  => 'tags',
         :desc  => "comma-separated list of key=value pairs to apply",
         :type  => String,
@@ -199,6 +205,18 @@ module Stemcell
         :type  => nil,
         :env   => 'NON_INTERACTIVE',
         :short => :f
+      },
+      {
+        :name  => 'private_ip_address',
+        :desc  => "Private ip address in VPC",
+        :type  => String,
+        :env   => 'PRIVATE_IP_ADDRESS'
+      },
+      {
+        :name  => 'elastic_ip_address',
+        :desc  => "Elastic ip address. Must be already reserved.",
+        :type  => String,
+        :env   => 'ELASTIC_IP_ADDRESS'
       }
     ]
 

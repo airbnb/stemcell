@@ -8,7 +8,7 @@ module Stemcell
     attr_reader :chef_root
     attr_reader :chef_role
 
-    VERSION_STRING = "Stemcell (c) 2012-2013 Airbnb."
+    VERSION_STRING = "Stemcell (c) 2012-2013 Airbnb with Applifier branch. version #{Stemcell::VERSION}"
     BANNER_STRING  = "Launch instances from metadata stored in roles!\n" \
                      "Usage: stemcell [chef role] [options]"
 
@@ -85,9 +85,15 @@ module Stemcell
       error "There was a problem expanding the #{chef_role} role. " \
             "Perhaps it or one of its dependencies does not exist."
     rescue MissingStemcellOptionError => e
-      error "The '#{e.option}' attribute needs to be specified on the " \
-            "command line, in the role, in the stemcell.json defaults, " \
-            "or set by the #{e.option.upcase.gsub('-','_')} environment variable."
+      if e.option.is_a?(Array)
+        error "One of these options #{e.option.join(', ')} attibutes needs be specified " \
+              "on the command line, in the role, in the stemcell.json defaults, " \
+              "or set by the #{e.option.join(', ').upcase.gsub('-','_')} environment variables."
+      else
+        error "The '#{e.option}' attribute needs to be specified on the " \
+              "command line, in the role, in the stemcell.json defaults, " \
+              "or set by the #{e.option.upcase.gsub('-','_')} environment variable."
+      end
     rescue UnknownBackingStoreError => e
       error "Unknown backing store type: #{e.backing_store}."
     end

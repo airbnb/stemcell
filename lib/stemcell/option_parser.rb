@@ -211,6 +211,12 @@ module Stemcell
         :desc  => "Private ip address in VPC",
         :type  => String,
         :env   => 'PRIVATE_IP_ADDRESS'
+      },
+      {
+        :name  => 'elastic_ip_address',
+        :desc  => "Elastic ip address. Must be already reserved.",
+        :type  => String,
+        :env   => 'ELASTIC_IP_ADDRESS'
       }
     ]
 

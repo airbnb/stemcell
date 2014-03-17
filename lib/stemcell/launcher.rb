@@ -184,6 +184,7 @@ module Stemcell
       # wait for aws to report instance stats
       if opts.fetch('wait', true)
         wait(instances)
+        bind_elastic_ip_address(instances, opts['elastic_ip_address']) if opts['elastic_ip_address']
         log_instances_to_ocular(instances, opts['chef_role'])
         print_run_info(instances)
         @log.info "launched instances successfully"
@@ -236,9 +237,23 @@ module Stemcell
           end
         end
       end
+
+      if params['count'] > 1 and params['elastic_ip_address']
+        raise "Can't have elastic ip address when launching more than one instance"
+      end
     end
 
     private
+
+    def bind_elastic_ip_address(instances, ip_address)
+      if instances.length > 1
+        @log.error "ERROR: More than one instance launched so can't bind elastic ip address"
+      else
+        @log.info "Binding elastic ip address #{ip_address} to instance..."
+        ret = instances[0].associate_elastic_ip(ip_address)
+        @log.info "Elastic ip #{ip_address} associated: #{ret}"
+      end
+    end
 
     def log_instances_to_ocular(instances, role)
 
@@ -254,9 +269,9 @@ module Stemcell
         connection = Net::HTTP.new("ocular.us-east-1.applifier.info", 2100)
         result = connection.post('/', data.to_json)
         if result.code.to_i >= 200 and result.code.to_i < 300
-          puts "Updated instance #{instance.instance_id} to ocular: #{result.body}"
+          @log.info "Updated instance #{instance.instance_id} to ocular: #{result.body}"
         else
-          puts "Error updating instance #{instance.instance_id} to ocular: #{result.body}"
+          @log.info "Error updating instance #{instance.instance_id} to ocular: #{result.body}"
         end
       end
     end

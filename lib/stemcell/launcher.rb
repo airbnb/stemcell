@@ -251,7 +251,7 @@ module Stemcell
         @log.error "ERROR: More than one instance launched so can't bind elastic ip address"
       else
         @log.info "Binding elastic ip address #{ip_address} to instance..."
-        ret = instances[0].associate_elastic_ip(ip_address)
+        ret = instances[0].associate_elastic_ip(@ec2.elastic_ips[ip_address])
         @log.info "Elastic ip #{ip_address} associated: #{ret}"
       end
     end

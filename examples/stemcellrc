@@ -20,10 +20,6 @@ CHEF_ENVIRONMENT=default
 #   modeled here: https://github.com/opscode/chef-repo
 export LOCAL_CHEF_ROOT=/path/to/your/local/chef/repository
 
-# The git origin is the publically-accessible version of the
-#   local chef root
-export GIT_ORIGIN=git@github.com:airbnb/chef.git
-
 # The git branch to use by default
 export GIT_BRANCH=production
 

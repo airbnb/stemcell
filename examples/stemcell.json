@@ -3,7 +3,8 @@
     "region":"us-east-1",
     "security_groups": ["default"],
     "instance_type": "m1.small",
-    "backing_store": "instance_store"
+    "backing_store": "instance_store",
+    "git_origin": "git@github.com:YOUR_CHEF_REPO.git"
   },
 
   "backing_store": {

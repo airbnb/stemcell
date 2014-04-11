@@ -95,14 +95,15 @@ module Stemcell
     def tail_converge(instances, options={})
       puts "\nTailing the initial converge. Press Ctrl-C to exit...".green
 
-      if instances.count > 1
-        puts "\nYou're launching more than one instance."
-        puts "Showing you on the output from #{instances.first.instance_id}."
-      end
-
       puts "\n"
-      tailer = LogTailer.new(instances.first.public_dns_name, options['ssh_user'])
-      tailer.run!
+      tailing_threads = instances.map do |instance|
+        Thread.new do
+          tailer = LogTailer.new(instance.public_dns_name, options['ssh_user'])
+          tailer.run!
+          puts "Finished #{instance.public_dns_name} => #{instance.id}"
+        end
+      end
+      tailing_threads.each(&:join)
     end
 
     def retrieve_defaults

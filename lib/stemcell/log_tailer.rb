@@ -77,14 +77,22 @@ module Stemcell
       end
 
       puts " UP!".green
-      puts "Server responded with: #{banner.green}"
+      puts "Server responded with: #{banner.strip.green}"
       true
     end
 
     def tail_until_interrupt
       return if interrupted
 
-      session = Net::SSH.start(hostname, username)
+      print "Starting connection "
+      begin
+        session = Net::SSH.start(hostname, username)
+      rescue Net::SSH::AuthenticationFailed
+        print "."
+        sleep 5
+        retry
+      end
+      puts " STARTED!".green
 
       channel = session.open_channel do |ch|
         ch.request_pty do |ch, success|
@@ -137,7 +145,7 @@ module Stemcell
       trap(:SIGINT) { @interrupted = true }
       yield
     ensure
-      trap(:SIGINT, nil) 
+      trap(:SIGINT, nil)
     end
   end
 end

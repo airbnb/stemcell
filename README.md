@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/airbnb/stemcell.png?branch=master)](https://travis-ci.org/airbnb/stemcell)
+
 # Stemcell #
 
 Stemcell launches instances in EC2.

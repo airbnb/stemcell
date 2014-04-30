@@ -24,7 +24,6 @@ module Stemcell
       'key_name',
       'instance_type',
       'image_id',
-      'security_groups',
       'availability_zone',
       'count'
     ]
@@ -44,8 +43,14 @@ module Stemcell
       'instance_domain_name',
       'image_id',
       'availability_zone',
+      'vpc_id',
+      'subnet',
+      'private_ip_address',
+      'dedicated_tenancy',
+      'associate_public_ip_address',
       'count',
       'security_groups',
+      'security_group_ids',
       'tags',
       'iam_role',
       'ebs_optimized',
@@ -76,7 +81,12 @@ module Stemcell
         :access_key_id     => @aws_access_key,
         :secret_access_key => @aws_secret_key})
 
-      @ec2 = AWS::EC2.new(:ec2_endpoint => @ec2_url)
+      if opts['vpc_id']
+        puts 'using vpc tho'
+        @ec2 = AWS::VPC.new(opts['vpc_id'], :ec2_endpoint => @ec2_url)
+      else
+        @ec2 = AWS::EC2.new(:ec2_endpoint => @ec2_url)
+      end
     end
 
 
@@ -101,15 +111,38 @@ module Stemcell
       # generate launch options
       launch_options = {
         :image_id => opts['image_id'],
-        :security_groups => opts['security_groups'],
         :instance_type => opts['instance_type'],
         :key_name => opts['key_name'],
         :count => opts['count'],
       }
 
+      if opts['security_groups'] && !opts['security_groups'].empty?
+        launch_options[:security_groups] = opts['security_groups']
+      end
+
+      if opts['security_group_ids'] && !opts['security_group_ids'].empty?
+        launch_options[:security_group_ids] = opts['security_group_ids']
+      end
+
       # specify availability zone (optional)
       if opts['availability_zone']
         launch_options[:availability_zone] = opts['availability_zone']
+      end
+
+      if opts['subnet']
+        launch_options[:subnet] = opts['subnet']
+      end
+
+      if opts['private_ip_address']
+        launch_options[:private_ip_address] = opts['private_ip_address']
+      end
+
+      if opts['dedicated_tenancy']
+        launch_options[:dedicated_tenancy] = opts['dedicated_tenancy']
+      end
+
+      if opts['associate_public_ip_address']
+        launch_options[:associate_public_ip_address] = opts['associate_public_ip_address']
       end
 
       # specify IAM role (optional)

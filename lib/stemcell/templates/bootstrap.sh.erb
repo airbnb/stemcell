@@ -92,7 +92,7 @@ install_chef() {
     package_local="/tmp/chef_${chef_version}.deb"
     package_url="<%= opts['chef_package_source'] %>"
     echo "Downloading chef from $package_url"
-    wget $package_url -O $package_local
+    wget $package_url -O $package_local --progress=dot:mega
     echo "Installing chef $chef_version"
     dpkg -i $package_local
     rm $package_local

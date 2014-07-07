@@ -83,6 +83,7 @@ GEM
       method_source (~> 0.8)
       slop (~> 3.4)
     rack (1.5.2)
+    rake (10.3.2)
     rest-client (1.6.7)
       mime-types (>= 1.16)
     rspec (2.14.1)
@@ -109,6 +110,7 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
+  rake (~> 10.3.2)
   rspec (~> 2.14.1)
   rspec-instafail (~> 0.2.4)
   simplecov

@@ -1,4 +1,4 @@
-# Stemcell #
+# Stemcell # [![Build Status](https://travis-ci.org/airbnb/stemcell.svg?branch=master)](https://travis-ci.org/airbnb/stemcell)
 
 Stemcell launches instances in EC2.
 These instances are created to your specification, with knobs like AMI, instance type, and region exposed.

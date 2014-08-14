@@ -101,6 +101,12 @@ install_chef() {
   fi
 }
 
+create_ohai_hint() {
+  ohai_hints_dir="${chef_dir}/ohai/hints"
+  mkdir -p $ohai_hints_dir
+  touch "${ohai_hints_dir}/ec2.json"
+}
+
 update_repo() {
   echo -e "$git_key" > $keyfile
   chmod 0400 $keyfile
@@ -230,6 +236,7 @@ install curl
 install git
 set_hostname
 install_chef
+create_ohai_hint
 update_repo
 configure_chef
 configure_converger

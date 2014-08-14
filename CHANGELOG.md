@@ -1,5 +1,6 @@
 
 # next release
+- Add Ohai hint for EC2 [sandstrom](https://github.com/sandstrom)
 - Less verbose download progress for chef [sandstrom](https://github.com/sandstrom)
 
 # 0.7.1

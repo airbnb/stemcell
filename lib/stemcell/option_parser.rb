@@ -66,10 +66,46 @@ module Stemcell
         :env   => 'SECURITY_GROUPS'
       },
       {
+        :name  => 'security_group_ids',
+        :desc  => "comma-separated list of security group IDs to launch instance with",
+        :type  => String,
+        :env   => 'SECURITY_GROUP_IDS'
+      },
+      {
         :name  => 'availability_zone',
         :desc  => "zone in which to launch instances",
         :type  => String,
         :env   => 'AVAILABILITY_ZONE'
+      },
+      {
+        :name  => 'vpc_id',
+        :desc  => "VPC ID for which to launch this instance",
+        :type  => String,
+        :env   => 'VPC_ID'
+      },
+      {
+        :name  => 'subnet',
+        :desc  => "VPC subnet for which to launch this instance",
+        :type  => String,
+        :env   => 'SUBNET'
+      },
+      {
+        :name  => 'private_ip_address',
+        :desc  => "VPC private IP to use",
+        :type  => String,
+        :env   => 'PRIVATE_IP_ADDRESS'
+      },
+      {
+        :name  => 'dedicated_tenancy',
+        :desc  => "Enable dedicated tenancy",
+        :env   => 'DEDICATED_TENANCY',
+        :default => false,
+      },
+      {
+        :name  => 'associate_public_ip_address',
+        :desc  => "Associate public IP address (for VPC)",
+        :env   => 'ASSOCIATE_PUBLIC_IP_ADDRESS',
+        :default => false,
       },
       {
         :name  => 'tags',
@@ -318,6 +354,7 @@ module Stemcell
 
       # convert security_groups from comma seperated string to ruby array
       options['security_groups'] &&= options['security_groups'].split(',')
+      options['security_group_ids'] &&= options['security_group_ids'].split(',')
       # convert ephemeral_devices from comma separated string to ruby array
       options['ephemeral_devices'] &&= options['ephemeral_devices'].split(',')
 

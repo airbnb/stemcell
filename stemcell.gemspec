@@ -10,6 +10,7 @@ Gem::Specification.new do |s|
   s.description   = %q{A tool for launching and bootstrapping EC2 instances}
   s.summary       = %q{no summary}
   s.homepage      = "https://github.com/airbnb/stemcell"
+  s.license       = 'MIT'
 
   s.files         = `git ls-files`.split($/)
   s.executables   = s.files.grep(%r{^bin/}).map{ |f| File.basename(f) }

@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    stemcell (0.7.1)
+    stemcell (0.8.0)
       aws-creds (~> 0.2.2)
       aws-sdk (~> 1.9)
       chef (>= 11.4.0)
@@ -18,7 +18,7 @@ GEM
     aws-sdk (1.51.0)
       json (~> 1.4)
       nokogiri (>= 1.4.4)
-    chef (11.14.2)
+    chef (11.14.6)
       chef-zero (~> 2.1, >= 2.1.4)
       diff-lcs (~> 1.2, >= 1.2.4)
       erubis (~> 2.7)
@@ -33,6 +33,7 @@ GEM
       net-ssh (~> 2.6)
       net-ssh-multi (~> 1.1)
       ohai (~> 7.2)
+      plist (~> 3.1.0)
       pry (~> 0.9)
       rest-client (>= 1.0.4, <= 1.6.7)
     chef-zero (2.2)
@@ -72,7 +73,7 @@ GEM
       net-ssh-gateway (>= 1.2.0)
     nokogiri (1.6.3.1)
       mini_portile (= 0.6.0)
-    ohai (7.2.0)
+    ohai (7.2.4)
       ffi (~> 1.9)
       ffi-yajl (~> 1.0)
       ipaddress
@@ -83,7 +84,8 @@ GEM
       mixlib-shellout (~> 1.2)
       systemu (~> 2.6.4)
       wmi-lite (~> 1.0)
-    pry (0.10.0)
+    plist (3.1.0)
+    pry (0.10.1)
       coderay (~> 1.1.0)
       method_source (~> 0.8.1)
       slop (~> 3.4)

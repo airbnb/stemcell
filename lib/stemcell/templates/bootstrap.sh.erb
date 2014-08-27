@@ -146,6 +146,7 @@ repo_dir =    "${repo_dir}"
 cookbook_path "#{repo_dir}/cookbooks"
 role_path     "#{repo_dir}/roles"
 data_bag_path "#{repo_dir}/data_bags"
+ssl_verify_mode :verify_peer
 
 log_level        :info
 log_location     STDOUT

@@ -176,8 +176,6 @@ module Stemcell
         end
       end
 
-      #
-
       # generate user data script to bootstrap instance, include in launch
       # options UNLESS we have manually set the user-data (ie. for ec2admin)
       launch_options[:user_data] = opts.fetch('user_data', render_template(opts))
@@ -213,11 +211,14 @@ module Stemcell
       return @ec2.instances[id]
     end
 
-    def kill(instances, opts={})
+    def kill(instance_ids, opts={})
       return if instances.nil?
-      instances.each do |i|
+
+      run_batch_operation(instance_ids,
+                          :operation => 'kill',
+                          :stop_on_first_error => false) do |id|
         begin
-          instance = find_instance(i)
+          instance = find_instance(id)
           @log.warn "Terminating instance #{instance.instance_id}"
           instance.terminate
         rescue AWS::EC2::Errors::InvalidInstanceID::NotFound => e
@@ -288,7 +289,8 @@ module Stemcell
 
     def set_tags(instances=[],tags)
       @log.info "setting tags on instance(s)"
-      instances.each do |instance|
+      run_batch_operation(instances,
+                         :operation => 'set_tags') do |instances|
         instance.tags.set(tags)
       end
     end
@@ -298,5 +300,28 @@ module Stemcell
         File.read(File.expand_path(opt)) rescue opt
     end
 
+    # this methods allows us to
+    #   1. run operation on a batch of instances with more flexibly
+    #   2. provide informative error message about instance statuses when
+    #      error occurs.
+    def self.run_batch_operation(instances, batch_opt={})
+      operation = batch_opt.fetch(:operation, "unknown")
+      stop_on_first_error = batch_opt.fetch(:stop_on_first_error, true)
+
+      incompleteOperation = IncompleteOperation.new(
+        operation,
+        instances.map { |instance| instance.id }
+      )
+      instances.each do |instance|
+        begin
+          yield instance
+          incompleteOperation.add_finished_instance(instance.id)
+        rescue => e
+          incompleteOperation.add_error(instance.id, e)
+          break if stop_on_first_error
+        end
+      end
+      raise incompleteOperation unless incompleteOperation.errors.empty?
+    end
   end
 end

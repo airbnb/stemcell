@@ -23,4 +23,30 @@ module Stemcell
       @option = option
     end
   end
+
+  class IncompleteOperation < Error
+    attr_reader :operation, :all_instances, :finished_instances, :errors
+    def initialize(operation, all_instances)
+      @operation = operation
+      @all_instances = all_instances
+
+      @finished_instances = []
+      @errors = {}
+    end
+
+    def add_finished_instance(instance_id)
+      @finished_instances << instance_id
+    end
+
+    def add_error(instance_id, error)
+      @errors[instance_id] = error
+    end
+
+    def message
+      "Incomplete operation '#{@operation}': " +
+      "all_instances=#{@all_instances.join('|')}; " +
+      "finished_instances=#{@finished_instances.join('|')}; " +
+      "errors=" + (@errors.map { |k, v| "'#{k}' => '#{v}'"}.join('|'))
+    end
+  end
 end

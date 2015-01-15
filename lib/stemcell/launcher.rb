@@ -186,14 +186,23 @@ module Stemcell
       instances = do_launch(launch_options)
 
       # set tags on all instances launched
-      set_tags(instances, tags)
-      @log.info "sent ec2 api requests successfully"
+      begin
+        set_tags(instances, tags)
+        @log.info "sent ec2 api requests successfully"
 
-      # wait for aws to report instance stats
-      if opts.fetch('wait', true)
-        wait(instances)
-        print_run_info(instances)
-        @log.info "launched instances successfully"
+        # wait for aws to report instance stats
+        if opts.fetch('wait', true)
+          wait(instances)
+          print_run_info(instances)
+          @log.info "launched instances successfully"
+        end
+      rescue => e
+        @log.info "launch failed, killing all launched instances"
+        # ensure the propery cleanup
+        # NOTE: kill(0) may still fails and hence stops us from re-raise the
+        # `e`. For simplicity, we'll keep the way it is.
+        kill(instance, :ignore_not_found => true)
+        raise e
       end
 
       return instances
@@ -203,7 +212,7 @@ module Stemcell
       return @ec2.instances[id]
     end
 
-    def kill(instances,opts={})
+    def kill(instances, opts={})
       return if instances.nil?
       instances.each do |i|
         begin
@@ -248,7 +257,6 @@ module Stemcell
 
         elapsed = Time.now - @start_time
         if elapsed >= @timeout
-          kill(instances)
           raise TimeoutError, "exceded timeout of #{@timeout}"
         else
           sleep min(5, @timeout - elapsed)

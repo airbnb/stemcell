@@ -244,14 +244,14 @@ module Stemcell
                 "instance(s) (#{instances.inspect}):"
 
       while true
-        sleep 5
-        if Time.now - @start_time > @timeout
+        break if instances.select{|i| i.status != :running }.empty?
+
+        elapsed = Time.now - @start_time
+        if elapsed >= @timeout
           kill(instances)
           raise TimeoutError, "exceded timeout of #{@timeout}"
-        end
-
-        if instances.select{|i| i.status != :running }.empty?
-          break
+        else
+          sleep min(5, @timeout - elapsed)
         end
       end
 

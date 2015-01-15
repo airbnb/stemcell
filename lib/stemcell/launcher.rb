@@ -1,6 +1,7 @@
 require 'aws-sdk'
 require 'logger'
 require 'erb'
+require 'set'
 
 require "stemcell/version"
 require "stemcell/option_parser"
@@ -287,10 +288,18 @@ module Stemcell
       return instances
     end
 
-    def set_tags(instances=[],tags)
+    def set_tags(instances=[], tags)
       @log.info "setting tags on instance(s)"
+      # We'll retry setting tags when encountering AWS::EC2::Errors::InvalidInstanceID::NotFound
+      retry_options = {
+        :interval_ms => 3000,
+        :max_retry => 3,
+        :exceptions_to_retry => Set.new([AWS::EC2::Errors::InvalidInstanceID::NotFound]),
+      }
+
       run_batch_operation(instances,
-                         :operation => 'set_tags') do |instances|
+                         :operation => 'set_tags',
+                         :retry_options => retry_options) do |instances|
         instance.tags.set(tags)
       end
     end
@@ -304,23 +313,52 @@ module Stemcell
     #   1. run operation on a batch of instances with more flexibly
     #   2. provide informative error message about instance statuses when
     #      error occurs.
-    def self.run_batch_operation(instances, batch_opt={})
+    def run_batch_operation(instances, batch_opt={})
+      return if instances.empty?
+
       operation = batch_opt.fetch(:operation, "unknown")
       stop_on_first_error = batch_opt.fetch(:stop_on_first_error, true)
 
+      # -- retry options
+      retry_options = batch_opt.fetch(:retry_options, {})
+      exceptions_to_retry = retry_options.fetch(:exceptions_to_retry) { Set.new }
+      max_retry = retry_options.fetch(:max_retry, 0)
+      interval_ms = retry_options.fetch(:interval_ms, 3000)
+
+      remaining_instances = instances.dup
       incompleteOperation = IncompleteOperation.new(
         operation,
-        instances.map { |instance| instance.id }
+        instances.map { |instance| instance.id },
       )
-      instances.each do |instance|
-        begin
-          yield instance
-          incompleteOperation.add_finished_instance(instance.id)
-        rescue => e
-          incompleteOperation.add_error(instance.id, e)
-          break if stop_on_first_error
+      # We don't use `retry` because we need to do the batch retry.
+      (0..max_retry).each do |num_retry|
+        # we don't sleep if this is our first time to execute
+        unless num_retry == 0
+          @log.debug(
+            "#{num_retry}/#{max_retry}: will retry failed #{remaining_instances.size} instances"
+          )
+          sleep interval_ms / 1000.0
         end
+
+        remaining_instances.keep_if do |instance|
+          need_retry = false
+          begin
+            yield instance
+            incompleteOperation.add_finished_instance(instance.id)
+          rescue *exceptions_to_retry => e
+            @log.info "caught a retry-able exception: #{e.message}"
+            incompleteOperation.add_error(instance.id, e)
+            need_retry = true
+          rescue => e
+            @log.info "caught a unretry-able exception: #{e.message}"
+            incompleteOperation.add_error(instance.id, e)
+            raise incompleteOperation if stop_on_first_error
+          end
+        end
+
+        break if remaining_instances.empty?
       end
+
       raise incompleteOperation unless incompleteOperation.errors.empty?
     end
   end

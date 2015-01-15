@@ -27,6 +27,7 @@ module Stemcell
   class IncompleteOperation < Error
     attr_reader :operation, :all_instances, :finished_instances, :errors
     def initialize(operation, all_instances)
+      super()
       @operation = operation
       @all_instances = all_instances
 
@@ -36,6 +37,8 @@ module Stemcell
 
     def add_finished_instance(instance_id)
       @finished_instances << instance_id
+      # an instance may run into an error and get fixed later
+      @errors.delete(instance_id)
     end
 
     def add_error(instance_id, error)

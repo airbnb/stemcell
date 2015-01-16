@@ -198,10 +198,11 @@ module Stemcell
         end
       rescue => e
         @log.info "launch failed, killing all launched instances"
-        # ensure the propery cleanup
-        # NOTE: kill(0) may still fails and hence stops us from re-raise the
-        # `e`. For simplicity, we'll keep the way it is.
-        kill(instance, :ignore_not_found => true)
+        begin
+          kill(instances, :ignore_not_found => true)
+        rescue => kill_error
+          @log.warn "encountered an error during cleanup: #{kill_error.message}"
+        end
         raise e
       end
 
@@ -252,9 +253,7 @@ module Stemcell
       @log.info "Waiting up to #{@timeout} seconds for #{instances.count} " \
                 "instance(s) (#{instances.inspect}):"
 
-      while true
-        break if instances.select{|i| i.status != :running }.empty?
-
+      while !instances.all? { |i| i.status == :running }
         elapsed = Time.now - @start_time
         if elapsed >= @timeout
           raise TimeoutError, "exceded timeout of #{@timeout}"

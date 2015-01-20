@@ -186,14 +186,24 @@ module Stemcell
       instances = do_launch(launch_options)
 
       # set tags on all instances launched
-      set_tags(instances, tags)
-      @log.info "sent ec2 api requests successfully"
+      begin
+        set_tags(instances, tags)
+        @log.info "sent ec2 api requests successfully"
 
-      # wait for aws to report instance stats
-      if opts.fetch('wait', true)
-        wait(instances)
-        print_run_info(instances)
-        @log.info "launched instances successfully"
+        # wait for aws to report instance stats
+        if opts.fetch('wait', true)
+          wait(instances)
+          print_run_info(instances)
+          @log.info "launched instances successfully"
+        end
+      rescue => e
+        @log.info "launch failed, killing all launched instances"
+        begin
+          kill(instances, :ignore_not_found => true)
+        rescue => kill_error
+          @log.warn "encountered an error during cleanup: #{kill_error.message}"
+        end
+        raise e
       end
 
       return instances
@@ -203,7 +213,7 @@ module Stemcell
       return @ec2.instances[id]
     end
 
-    def kill(instances,opts={})
+    def kill(instances, opts={})
       return if instances.nil?
       instances.each do |i|
         begin
@@ -243,15 +253,12 @@ module Stemcell
       @log.info "Waiting up to #{@timeout} seconds for #{instances.count} " \
                 "instance(s) (#{instances.inspect}):"
 
-      while true
-        sleep 5
-        if Time.now - @start_time > @timeout
-          kill(instances)
+      while !instances.all? { |i| i.status == :running }
+        elapsed = Time.now - @start_time
+        if elapsed >= @timeout
           raise TimeoutError, "exceded timeout of #{@timeout}"
-        end
-
-        if instances.select{|i| i.status != :running }.empty?
-          break
+        else
+          sleep min(5, @timeout - elapsed)
         end
       end
 

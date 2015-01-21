@@ -213,19 +213,19 @@ module Stemcell
     end
 
     def kill(instance_ids, opts={})
-      return if instances.nil?
+      return if instance_ids.nil?
 
-      run_batch_operation(instance_ids,
-                          :operation => 'kill',
-                          :stop_on_first_error => false) do |id|
+      errors = run_batch_operation(instance_ids) do |id|
         begin
           instance = find_instance(id)
           @log.warn "Terminating instance #{instance.instance_id}"
           instance.terminate
+          nil # nil == success
         rescue AWS::EC2::Errors::InvalidInstanceID::NotFound => e
-          throw e unless opts[:ignore_not_found]
+          opts[:ignore_not_found] ? nil : e
         end
       end
+      check_errors(:kill, instance_ids, errors)
     end
 
     # this is made public for ec2admin usage
@@ -290,18 +290,15 @@ module Stemcell
 
     def set_tags(instances=[], tags)
       @log.info "setting tags on instance(s)"
-      # We'll retry setting tags when encountering AWS::EC2::Errors::InvalidInstanceID::NotFound
-      retry_options = {
-        :interval_ms => 3000,
-        :max_retry => 3,
-        :exceptions_to_retry => Set.new([AWS::EC2::Errors::InvalidInstanceID::NotFound]),
-      }
-
-      run_batch_operation(instances,
-                         :operation => 'set_tags',
-                         :retry_options => retry_options) do |instances|
-        instance.tags.set(tags)
+      errors = run_batch_operation(instances) do |instance|
+        begin
+          instance.tags.set(tags)
+          nil # nil == success
+        rescue AWS::EC2::Errors::InvalidInstanceID::NotFound => e
+          e
+        end
       end
+      check_errors(:set_tags, instances.map { |i| i.id }, errors)
     end
 
     # attempt to accept keys as file paths
@@ -309,57 +306,40 @@ module Stemcell
         File.read(File.expand_path(opt)) rescue opt
     end
 
-    # this methods allows us to
-    #   1. run operation on a batch of instances with more flexibly
-    #   2. provide informative error message about instance statuses when
-    #      error occurs.
-    def run_batch_operation(instances, batch_opt={})
-      return if instances.empty?
+    MAX_ATTEMPTS = 3
+    INITIAL_RETRY_SEC = 1
 
-      operation = batch_opt.fetch(:operation, "unknown")
-      stop_on_first_error = batch_opt.fetch(:stop_on_first_error, true)
-
-      # -- retry options
-      retry_options = batch_opt.fetch(:retry_options, {})
-      exceptions_to_retry = retry_options.fetch(:exceptions_to_retry) { Set.new }
-      max_retry = retry_options.fetch(:max_retry, 0)
-      interval_ms = retry_options.fetch(:interval_ms, 3000)
-
-      remaining_instances = instances.dup
-      incompleteOperation = IncompleteOperation.new(
-        operation,
-        instances.map { |instance| instance.id },
-      )
-      # We don't use `retry` because we need to do the batch retry.
-      (0..max_retry).each do |num_retry|
-        # we don't sleep if this is our first time to execute
-        unless num_retry == 0
-          @log.debug(
-            "#{num_retry}/#{max_retry}: will retry failed #{remaining_instances.size} instances"
-          )
-          sleep interval_ms / 1000.0
-        end
-
-        remaining_instances.keep_if do |instance|
-          need_retry = false
-          begin
-            yield instance
-            incompleteOperation.add_finished_instance(instance.id)
-          rescue *exceptions_to_retry => e
-            @log.info "caught a retry-able exception: #{e.message}"
-            incompleteOperation.add_error(instance.id, e)
-            need_retry = true
-          rescue => e
-            @log.info "caught a unretry-able exception: #{e.message}"
-            incompleteOperation.add_error(instance.id, e)
-            raise incompleteOperation if stop_on_first_error
+    # Return a Hash of instance => error. Empty hash indicates "no error"
+    # for code block:
+    #   - if block returns nil, success
+    #   - if block returns non-nil value (e.g., exception), retry 3 times w/ backoff
+    #   - if block raises exception, fail
+    def run_batch_operation(instances)
+      instances.map do |instance|
+        begin
+          attempt = 0
+          result = nil
+          while attempt < MAX_ATTEMPTS
+            # sleep idempotently except for the first attempt
+            sleep(INITIAL_RETRY_SEC * 2 ** attempt) if attempt != 0
+            result = yield(instance)
+            break if result.nil? # nil indicates success
+            attempt += 1
           end
+          result # result for this instance is nil or returned exception
+        rescue => e
+          e # result for this instance is caught exception
         end
-
-        break if remaining_instances.empty?
       end
+    end
 
-      raise incompleteOperation unless incompleteOperation.errors.empty?
+    def check_errors(operation, instance_ids, errors)
+      return if errors.all?(&:nil?)
+      raise IncompleteOperation.new(
+        operation,
+        instance_ids,
+        instance_ids.zip(errors).reject { |i, e| e.nil? }
+      )
     end
   end
 end

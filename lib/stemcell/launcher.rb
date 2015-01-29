@@ -1,6 +1,7 @@
 require 'aws-sdk'
 require 'logger'
 require 'erb'
+require 'set'
 
 require "stemcell/version"
 require "stemcell/option_parser"
@@ -176,8 +177,6 @@ module Stemcell
         end
       end
 
-      #
-
       # generate user data script to bootstrap instance, include in launch
       # options UNLESS we have manually set the user-data (ie. for ec2admin)
       launch_options[:user_data] = opts.fetch('user_data', render_template(opts))
@@ -213,17 +212,20 @@ module Stemcell
       return @ec2.instances[id]
     end
 
-    def kill(instances, opts={})
-      return if instances.nil?
-      instances.each do |i|
+    def kill(instance_ids, opts={})
+      return if instance_ids.nil?
+
+      errors = run_batch_operation(instance_ids) do |id|
         begin
-          instance = find_instance(i)
+          instance = find_instance(id)
           @log.warn "Terminating instance #{instance.instance_id}"
           instance.terminate
+          nil # nil == success
         rescue AWS::EC2::Errors::InvalidInstanceID::NotFound => e
-          throw e unless opts[:ignore_not_found]
+          opts[:ignore_not_found] ? nil : e
         end
       end
+      check_errors(:kill, instance_ids, errors)
     end
 
     # this is made public for ec2admin usage
@@ -286,11 +288,17 @@ module Stemcell
       return instances
     end
 
-    def set_tags(instances=[],tags)
+    def set_tags(instances=[], tags)
       @log.info "setting tags on instance(s)"
-      instances.each do |instance|
-        instance.tags.set(tags)
+      errors = run_batch_operation(instances) do |instance|
+        begin
+          instance.tags.set(tags)
+          nil # nil == success
+        rescue AWS::EC2::Errors::InvalidInstanceID::NotFound => e
+          e
+        end
       end
+      check_errors(:set_tags, instances.map(&:id), errors)
     end
 
     # attempt to accept keys as file paths
@@ -298,5 +306,40 @@ module Stemcell
         File.read(File.expand_path(opt)) rescue opt
     end
 
+    MAX_ATTEMPTS = 3
+    INITIAL_RETRY_SEC = 1
+
+    # Return a Hash of instance => error. Empty hash indicates "no error"
+    # for code block:
+    #   - if block returns nil, success
+    #   - if block returns non-nil value (e.g., exception), retry 3 times w/ backoff
+    #   - if block raises exception, fail
+    def run_batch_operation(instances)
+      instances.map do |instance|
+        begin
+          attempt = 0
+          result = nil
+          while attempt < MAX_ATTEMPTS
+            # sleep idempotently except for the first attempt
+            sleep(INITIAL_RETRY_SEC * 2 ** attempt) if attempt != 0
+            result = yield(instance)
+            break if result.nil? # nil indicates success
+            attempt += 1
+          end
+          result # result for this instance is nil or returned exception
+        rescue => e
+          e # result for this instance is caught exception
+        end
+      end
+    end
+
+    def check_errors(operation, instance_ids, errors)
+      return if errors.all?(&:nil?)
+      raise IncompleteOperation.new(
+        operation,
+        instance_ids,
+        instance_ids.zip(errors).reject { |i, e| e.nil? }
+      )
+    end
   end
 end

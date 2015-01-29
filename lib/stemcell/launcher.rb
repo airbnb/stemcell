@@ -298,7 +298,7 @@ module Stemcell
           e
         end
       end
-      check_errors(:set_tags, instances.map { |i| i.id }, errors)
+      check_errors(:set_tags, instances.map(&:id), errors)
     end
 
     # attempt to accept keys as file paths

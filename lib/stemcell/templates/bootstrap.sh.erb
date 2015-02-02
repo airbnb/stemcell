@@ -8,6 +8,11 @@
 # Martin Rhoads
 
 
+(
+echo 'Acquiring converge lock...'
+/usr/bin/flock -e 200
+echo 'Lock acquired!'
+
 set -o pipefail
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
@@ -253,3 +258,4 @@ configure_chef_daemon
 
 
 echo "<%= last_bootstrap_line %>"
+) 200> /var/run/converge.lock

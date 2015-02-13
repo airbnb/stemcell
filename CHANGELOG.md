@@ -2,6 +2,12 @@
 # next release
 - ...
 
+# 0.8.1
+- Add retry mechanism for instances launch/termination
+- Make `Launcher::launch!` transaction-like, which reclaims all partially launched instances in the event of non-intermittent error
+- Display better error message with reason and failed instances
+- Take converge lock during initial converge
+
 # 0.8.0
 - Support for VPC [Brenden](https://github.com/brndnmtthws)
 - Support relative paths and home alias in `Launcher#try_file` [Patrick Viet](https://github.com/patrickviet)

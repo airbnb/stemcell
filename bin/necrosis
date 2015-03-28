@@ -1,8 +1,8 @@
 #!/usr/bin/env ruby
 
-# -*- mode: shell -*- 
+# -*- mode: shell -*-
 
-require 'aws-sdk'
+require 'aws-sdk-v1'
 require 'trollop'
 
 options = Trollop::options do

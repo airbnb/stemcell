@@ -19,7 +19,11 @@ Gem::Specification.new do |s|
 
   s.add_runtime_dependency 'aws-sdk-v1', '~> 1.63'
   s.add_runtime_dependency 'net-ssh',    '~> 2.9'
-  s.add_runtime_dependency 'chef',       '>= 11.4.0'
+  if RUBY_VERSION >= '2.0'
+    s.add_runtime_dependency 'chef',     '>= 11.4.0'
+  else
+    s.add_runtime_dependency 'chef',     ['>= 11.4.0', '< 12.0.0']
+  end
 
   s.add_runtime_dependency 'trollop',    '~> 2.1'
   s.add_runtime_dependency 'aws-creds',  '~> 0.2.3'

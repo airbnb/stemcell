@@ -138,6 +138,12 @@ module Stemcell
         :env   => 'EBS_OPTIMIZED'
       },
       {
+        :name  => 'instance_initiated_shutdown_behavior',
+        :desc  => "What happens when the instance shuts down? ('stop' or 'terminate')",
+        :type  => String,
+        :default => 'stop',
+      },
+      {
         :name  => 'block_device_mappings',
         :desc  => 'block device mappings',
         :type  => String,

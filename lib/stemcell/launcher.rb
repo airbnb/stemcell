@@ -161,6 +161,12 @@ module Stemcell
       # specify an EBS-optimized instance (optional)
       launch_options[:ebs_optimized] = true if opts['ebs_optimized']
 
+      # specify placement group (optional)
+      if opts['instance_initiated_shutdown_behavior']
+        launch_options[:instance_initiated_shutdown_behavior] =
+          opts['instance_initiated_shutdown_behavior']
+      end
+
       # specify raw block device mappings (optional)
       if opts['block_device_mappings']
         launch_options[:block_device_mappings] = opts['block_device_mappings']

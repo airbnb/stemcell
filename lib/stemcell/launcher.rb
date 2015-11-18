@@ -10,8 +10,6 @@ module Stemcell
   class Launcher
 
     REQUIRED_OPTIONS = [
-      'aws_access_key',
-      'aws_secret_key',
       'region'
     ]
 
@@ -78,9 +76,12 @@ module Stemcell
       @timeout = 300
       @start_time = Time.new
 
-      AWS.config({
+      aws_configs = {:region => @region}
+      aws_configs.merge!({
         :access_key_id     => @aws_access_key,
-        :secret_access_key => @aws_secret_key})
+        :secret_access_key => @aws_secret_key
+      }) if @aws_access_key && @aws_secret_key
+      AWS.config(aws_configs)
 
       if opts['vpc_id']
         puts 'using vpc tho'

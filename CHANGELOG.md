@@ -1,5 +1,7 @@
+# 0.9.1
+- Don't require aws keys for Stemcell::Launcher to allow for launching via iam role
 
-# next release
+# 0.9.0
 - ...
 
 # 0.8.1

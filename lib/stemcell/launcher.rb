@@ -267,7 +267,7 @@ module Stemcell
         if elapsed >= @timeout
           raise TimeoutError, "exceded timeout of #{@timeout}"
         else
-          sleep min(5, @timeout - elapsed)
+          sleep [5, @timeout - elapsed].min
         end
       end
 

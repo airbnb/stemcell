@@ -160,6 +160,7 @@ module Stemcell
         :desc  => "What happens when the instance shuts down? ('stop' or 'terminate')",
         :type  => String,
         :default => 'stop',
+        :env   => 'INSTANCE_INITIATED_SHUTDOWN_BEHAVIOR',
       },
       {
         :name  => 'block_device_mappings',

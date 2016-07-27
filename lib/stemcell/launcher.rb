@@ -51,6 +51,7 @@ module Stemcell
       'security_groups',
       'security_group_ids',
       'tags',
+      'classic_link',
       'iam_role',
       'ebs_optimized',
       'termination_protection',
@@ -195,10 +196,15 @@ module Stemcell
       # launch instances
       instances = do_launch(launch_options)
 
-      # set tags on all instances launched
+      # everything from here on out must succeed, or we kill the instances we just launched
       begin
+        # set tags on all instances launched
         set_tags(instances, tags)
-        @log.info "sent ec2 api requests successfully"
+        @log.info "sent ec2 api tag requests successfully"
+
+        # link to classiclink
+        set_classic_link(instances, opts['classic_link'])
+        @log.info "succesfully applied classic link settings (if any)"
 
         # wait for aws to report instance stats
         if opts.fetch('wait', true)
@@ -310,6 +316,26 @@ module Stemcell
         end
       end
       check_errors(:set_tags, instances.map(&:id), errors)
+    end
+
+    def set_classic_link(instances, classic_link)
+      return unless classic_link['vpc_id']
+      return unless classic_link['security_group_ids'] && !classic_link['security_group_ids'].empty?
+
+      @log.info "applying classic link settigs on instance(s)"
+      errors = run_batch_operation(instances) do |instance|
+        begin
+          result = @ec2.attach_classic_link_vpc({
+              :instance_id => instance.id,
+              :vpc_id => classic_link['vpc_id'],
+              :groups => classic_link['security_group_ids'],
+            })
+          (result.return == true) ? nil : "classic link attach request failed"
+        rescue StandardError => e
+          e
+        end
+      end
+      check_errors(:set_classic_link, instances.map(&:id), errors)
     end
 
     # attempt to accept keys as file paths

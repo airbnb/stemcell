@@ -84,6 +84,18 @@ module Stemcell
         :env   => 'VPC_ID'
       },
       {
+        :name  => 'classic_link_vpc_id',
+        :desc  => 'VPC ID to which this instance will be classic-linked',
+        :type  => String,
+        :env   => 'CLASSIC_LINK_VPC_ID',
+      },
+      {
+        :name  => 'classic_link_security_group_ids',
+        :desc  => 'comma-separated list of security group IDs to link into ClassicLink; not used unless classic_link_vpc_id is set',
+        :type  => String,
+        :env   => 'CLASSIC_LINK_SECURITY_GROUP_IDS',
+      },
+      {
         :name  => 'subnet',
         :desc  => "VPC subnet for which to launch this instance",
         :type  => String,
@@ -369,6 +381,12 @@ module Stemcell
       options['security_group_ids'] &&= options['security_group_ids'].split(',')
       # convert ephemeral_devices from comma separated string to ruby array
       options['ephemeral_devices'] &&= options['ephemeral_devices'].split(',')
+
+      # format the classic link options
+      options['classic_link'] = {
+        'vpc_id' => options['classic_link_vpc_id'],
+        'security_group_ids' => options['classic_link_security_group_ids'],
+      }
 
       options
     end

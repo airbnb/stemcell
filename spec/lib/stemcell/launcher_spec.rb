@@ -28,7 +28,7 @@ describe Stemcell::Launcher do
 
     it "raises no exception when no internal error occur" do
       errors = launcher.send(:run_batch_operation, instances) {}
-      errors.all?(&:nil?).should be_true
+      expect(errors.all?(&:nil?)).to be true
     end
 
     it "runs full batch even when there are two error" do
@@ -36,8 +36,8 @@ describe Stemcell::Launcher do
                              instances) do |instance, error|
         raise "error-#{instance.id}" if instance.id % 2 == 0
       end
-      errors.count(&:nil?).should be_eql(2)
-      errors.reject(&:nil?).map { |e| e.message }.should \
+      expect(errors.count(&:nil?)).to be_eql(2)
+      expect(errors.reject(&:nil?).map { |e| e.message }).to \
         be_eql([2, 4].map { |id| "error-#{id}" })
     end
 
@@ -52,7 +52,7 @@ describe Stemcell::Launcher do
             nil
         end
       end
-      errors.all?(&:nil?).should be_true
+      expect(errors.all?(&:nil?)).to be true
     end
   end
 end

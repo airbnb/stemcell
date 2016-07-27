@@ -68,10 +68,10 @@ describe Stemcell::MetadataSource do
     let(:expand_options)     { Hash.new }
 
     before do
-      config.stub(:default_options) { default_options }
-      config.stub(:availability_zones) { availability_zones }
-      config.stub(:options_for_backing_store) { backing_options }
-      chef_repo.stub(:metadata_for_role) { role_metadata }
+      allow(config).to receive(:default_options) { default_options }
+      allow(config).to receive(:availability_zones) { availability_zones }
+      allow(config).to receive(:options_for_backing_store) { backing_options }
+      allow(chef_repo).to receive(:metadata_for_role) { role_metadata }
     end
 
     let(:role)        { 'role' }
@@ -159,13 +159,13 @@ describe Stemcell::MetadataSource do
         it "calls the config object to retrieve the backing store options" do
           backing_options.merge!('image_id' => 'ami-nyancat')
           override_options.merge!('backing_store' => 'ebs')
-          config.should_receive(:options_for_backing_store).with('ebs') { backing_options }
+          expect(config).to receive(:options_for_backing_store).with('ebs') { backing_options }
           expect(expansion['image_id']).to eql 'ami-nyancat'
         end
 
         it "calls the repository object to determine the role metadata" do
           role_metadata.merge!('image_id' => 'ami-nyancat')
-          chef_repo.should_receive(:metadata_for_role).with(role, environment) { role_metadata }
+          expect(chef_repo).to receive(:metadata_for_role).with(role, environment) { role_metadata }
           expect(expansion['image_id']).to eql 'ami-nyancat'
         end
 

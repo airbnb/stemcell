@@ -1,4 +1,3 @@
-require 'rspec/instafail'
 require 'simplecov'
 
 require 'stemcell'
@@ -9,5 +8,5 @@ SimpleCov.start do
 end
 
 RSpec.configure do |config|
-  config.color_enabled = true
+  config.color = true
 end

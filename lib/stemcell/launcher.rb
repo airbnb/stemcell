@@ -225,16 +225,11 @@ module Stemcell
       return instances
     end
 
-    def find_instance(id)
-      return @ec2.instances[id]
-    end
+    def kill(instances, opts={})
+      return if !instances || instances.empty?
 
-    def kill(instance_ids, opts={})
-      return if instance_ids.nil?
-
-      errors = run_batch_operation(instance_ids) do |id|
+      errors = run_batch_operation(instances) do |instance|
         begin
-          instance = find_instance(id)
           @log.warn "Terminating instance #{instance.instance_id}"
           instance.terminate
           nil # nil == success
@@ -242,7 +237,7 @@ module Stemcell
           opts[:ignore_not_found] ? nil : e
         end
       end
-      check_errors(:kill, instance_ids, errors)
+      check_errors(:kill, instances.map(&:id), errors)
     end
 
     # this is made public for ec2admin usage

@@ -384,10 +384,10 @@ module Stemcell
       options['ephemeral_devices'] &&= options['ephemeral_devices'].split(',')
 
       # format the classic link options
-      options['classic_link'] = {
-        'vpc_id' => options['classic_link_vpc_id'],
-        'security_group_ids' => options['classic_link_security_group_ids'],
-      }
+      options['classic_link']['vpc_id'] = \
+        options['classic_link_vpc_id'] if options['classic_link_vpc_id']
+      options['classic_link']['security_group_ids'] = \
+        options['classic_link_security_group_ids'] if options['classic_link_security_group_ids']
 
       options
     end

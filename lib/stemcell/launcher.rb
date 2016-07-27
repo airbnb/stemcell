@@ -63,6 +63,7 @@ module Stemcell
     LAST_BOOTSTRAP_LINE = "Stemcell bootstrap finished successfully!"
 
     MAX_RUNNING_STATE_WAIT_TIME = 300 # seconds
+    RUNNING_STATE_WAIT_SLEEP_TIME = 5 # seconds
 
     def initialize(opts={})
       @log = Logger.new(STDOUT)
@@ -254,16 +255,12 @@ module Stemcell
     end
 
     def wait(instances)
-      @log.info "Waiting up to #{@timeout} seconds for #{instances.count} " \
-                "instance(s) (#{instances.inspect}):"
+      @log.info "Waiting up to #{MAX_RUNNING_STATE_WAIT_TIME} seconds for #{instances.count} " \
+                "instance(s): (#{instances.inspect})"
 
       times_out_at = Time.now + MAX_RUNNING_STATE_WAIT_TIME
       until instances.all?{ |i| i.status == :running }
-        if Time.now > times_out_at
-          raise TimeoutError, "exceded timeout of #{MAX_RUNNING_STATE_WAIT_TIME} seconds"
-        else
-          sleep [5, @timeout - elapsed].min
-        end
+        wait_time_expire_or_sleep(times_out_at)
       end
 
       @log.info "all instances in running state"
@@ -313,9 +310,7 @@ module Stemcell
       processed = []
       times_out_at = Time.now + MAX_RUNNING_STATE_WAIT_TIME
       until left_to_process.empty?
-        if Time.now > times_out_at
-          raise TimeoutError.new("Exceeded wait time of #{MAX_RUNNING_STATE_WAIT_TIME} seconds")
-        end
+        wait_time_expire_or_sleep(times_out_at)
 
         # we can only apply classic link when instances are in the running state
         # lets apply classiclink as instances become available so we don't wait longer than necessary
@@ -422,5 +417,13 @@ module Stemcell
       @ec2
     end
 
+    def wait_time_expire_or_sleep(times_out_at)
+      now = Time.now
+      if now >= times_out_at
+        raise TimeoutError, "exceded timeout of #{MAX_RUNNING_STATE_WAIT_TIME} seconds"
+      else
+        sleep [RUNNING_STATE_WAIT_SLEEP_TIME, times_out_at - now].min
+      end
+    end
   end
 end

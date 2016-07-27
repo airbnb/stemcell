@@ -63,6 +63,8 @@ module Stemcell
     TEMPLATE_PATH = '../templates/bootstrap.sh.erb'
     LAST_BOOTSTRAP_LINE = "Stemcell bootstrap finished successfully!"
 
+    MAX_RUNNING_STATE_WAIT_TIME = 300 # seconds
+
     def initialize(opts={})
       @log = Logger.new(STDOUT)
       @log.level = Logger::INFO unless ENV['DEBUG']
@@ -75,8 +77,6 @@ module Stemcell
       end
 
       @ec2_url = "ec2.#{@region}.amazonaws.com"
-      @timeout = 300
-      @start_time = Time.new
 
       aws_configs = {:region => @region}
       aws_configs.merge!({
@@ -271,10 +271,10 @@ module Stemcell
       @log.info "Waiting up to #{@timeout} seconds for #{instances.count} " \
                 "instance(s) (#{instances.inspect}):"
 
-      while !instances.all? { |i| i.status == :running }
-        elapsed = Time.now - @start_time
-        if elapsed >= @timeout
-          raise TimeoutError, "exceded timeout of #{@timeout}"
+      times_out_at = Time.now + MAX_RUNNING_STATE_WAIT_TIME
+      until instances.all?{ |i| i.status == :running }
+        if Time.now > times_out_at
+          raise TimeoutError, "exceded timeout of #{MAX_RUNNING_STATE_WAIT_TIME} seconds"
         else
           sleep [5, @timeout - elapsed].min
         end
@@ -317,31 +317,48 @@ module Stemcell
       check_errors(:set_tags, instances.map(&:id), errors)
     end
 
-    def set_classic_link(instances, classic_link)
+    def set_classic_link(left_to_process, classic_link)
       return unless classic_link['vpc_id']
       return unless classic_link['security_group_ids'] && !classic_link['security_group_ids'].empty?
 
-      @log.info "applying classic link settigs on instance(s)"
-      errors = run_batch_operation(instances) do |instance|
-        begin
-          result = @ec2.attach_classic_link_vpc({
-              :instance_id => instance.id,
-              :vpc_id => classic_link['vpc_id'],
-              :groups => classic_link['security_group_ids'],
-            })
-          (result.return == true) ? nil : "classic link attach request failed"
-        rescue StandardError => e
-          e
+      @log.info "applying classic link settings on #{left_to_process.count} instance(s)"
+
+      errors = []
+      processed = []
+      times_out_at = Time.now + MAX_RUNNING_STATE_WAIT_TIME
+      until left_to_process.empty?
+        if Time.now > times_out_at
+          raise TimeoutError.new("Exceeded wait time of #{MAX_RUNNING_STATE_WAIT_TIME} seconds")
+        end
+
+        # we can only apply classic link when instances are in the running state
+        # lets apply classiclink as instances become available so we don't wait longer than necessary
+        recently_running = left_to_process.select{ |inst| inst.status == :running }
+        left_to_process = left_to_process.reject{ |inst| recently_running.include?(inst) }
+
+        processed += recently_running
+        errors += run_batch_operation(recently_running) do |instance|
+          begin
+            result = @ec2.client.attach_classic_link_vpc({
+                :instance_id => instance.id,
+                :vpc_id => classic_link['vpc_id'],
+                :groups => classic_link['security_group_ids'],
+              })
+            (result.return == true) ? nil : "classic link attach request failed"
+          rescue StandardError => e
+            e
+          end
         end
       end
-      check_errors(:set_classic_link, instances.map(&:id), errors)
+
+      check_errors(:set_classic_link, processed.map(&:id), errors)
     end
 
     def enable_termination_protection(instances)
       @log.info "enabling termination protection on instance(s)"
       errors = run_batch_operation(instances) do |instance|
         begin
-          resp = @ec2.modify_instance_attribute({
+          resp = @ec2.client.modify_instance_attribute({
               :instance_id => instance.id,
               :disable_api_termination => {
                 :value => true

@@ -8,9 +8,8 @@ require "stemcell/option_parser"
 
 module Stemcell
   class Launcher
-
     REQUIRED_OPTIONS = [
-      'region'
+      'region',
     ]
 
     REQUIRED_LAUNCH_PARAMETERS = [
@@ -71,28 +70,15 @@ module Stemcell
       @log.debug "creating new stemcell object"
       @log.debug "opts are #{opts.inspect}"
 
-      REQUIRED_OPTIONS.each do |req|
-        raise ArgumentError, "missing required param #{req}" unless opts[req]
-        instance_variable_set("@#{req}",opts[req])
+      REQUIRED_OPTIONS.each do |opt|
+        raise ArgumentError, "missing required option 'region'" unless opts[opt]
       end
 
-      @ec2_url = "ec2.#{@region}.amazonaws.com"
-
-      aws_configs = {:region => @region}
-      aws_configs.merge!({
-        :access_key_id     => @aws_access_key,
-        :secret_access_key => @aws_secret_key
-      }) if @aws_access_key && @aws_secret_key
-      AWS.config(aws_configs)
-
-      if opts['vpc_id']
-        puts 'using vpc tho'
-        @ec2 = AWS::VPC.new(opts['vpc_id'], :ec2_endpoint => @ec2_url)
-      else
-        @ec2 = AWS::EC2.new(:ec2_endpoint => @ec2_url)
-      end
+      @region = opts['region']
+      @vpc_id = opts['vpc_id']
+      @aws_access_key = opts['aws_access_key']
+      @aws_secret_key = opts['aws_secret_key']
     end
-
 
     def launch(opts={})
       verify_required_options(opts, REQUIRED_LAUNCH_PARAMETERS)
@@ -283,7 +269,7 @@ module Stemcell
       @log.info "all instances in running state"
     end
 
-    def verify_required_options(params,required_options)
+    def verify_required_options(params, required_options)
       @log.debug "params is #{params}"
       @log.debug "required_options are #{required_options}"
       required_options.each do |required|
@@ -296,7 +282,7 @@ module Stemcell
     def do_launch(opts={})
       @log.debug "about to launch instance(s) with options #{opts}"
       @log.info "launching instances"
-      instances = @ec2.instances.create(opts)
+      instances = ec2.instances.create(opts)
       instances = [instances] unless Array === instances
       instances.each do |instance|
         @log.info "launched instance #{instance.instance_id}"
@@ -339,12 +325,12 @@ module Stemcell
         processed += recently_running
         errors += run_batch_operation(recently_running) do |instance|
           begin
-            result = @ec2.client.attach_classic_link_vpc({
+            result = ec2.client.attach_classic_link_vpc({
                 :instance_id => instance.id,
                 :vpc_id => classic_link['vpc_id'],
                 :groups => classic_link['security_group_ids'],
               })
-            (result.return == true) ? nil : "classic link attach request failed"
+            result.error
           rescue StandardError => e
             e
           end
@@ -358,7 +344,7 @@ module Stemcell
       @log.info "enabling termination protection on instance(s)"
       errors = run_batch_operation(instances) do |instance|
         begin
-          resp = @ec2.client.modify_instance_attribute({
+          resp = ec2.client.modify_instance_attribute({
               :instance_id => instance.id,
               :disable_api_termination => {
                 :value => true
@@ -412,5 +398,29 @@ module Stemcell
         instance_ids.zip(errors).reject { |i, e| e.nil? }
       )
     end
+
+    def ec2
+      return @ec2 if @ec2
+
+      # configure AWS with creds/region
+      aws_configs = {:region => @region}
+      aws_configs.merge!({
+        :access_key_id     => @aws_access_key,
+        :secret_access_key => @aws_secret_key
+      }) if @aws_access_key && @aws_secret_key
+      AWS.config(aws_configs)
+
+      # calculate our ec2 url
+      ec2_url = "ec2.#{@region}.amazonaws.com"
+
+      if @vpc_id
+        @ec2 = AWS::VPC.new(@vpc_id, :ec2_endpoint => ec2_url)
+      else
+        @ec2 = AWS::EC2.new(:ec2_endpoint => ec2_url)
+      end
+
+      @ec2
+    end
+
   end
 end

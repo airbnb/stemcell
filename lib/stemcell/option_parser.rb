@@ -138,6 +138,12 @@ module Stemcell
         :env   => 'EBS_OPTIMIZED'
       },
       {
+        :name  => 'termination_protection',
+        :desc  => "Prevent created instances from being terminated via the API",
+        :type  => String,
+        :env   => 'TERMINATION_PROTECTION'
+      },
+      {
         :name  => 'instance_initiated_shutdown_behavior',
         :desc  => "What happens when the instance shuts down? ('stop' or 'terminate')",
         :type  => String,

@@ -53,6 +53,7 @@ module Stemcell
       'tags',
       'iam_role',
       'ebs_optimized',
+      'termination_protection',
       'block_device_mappings',
       'ephemeral_devices',
       'placement_group'
@@ -161,6 +162,9 @@ module Stemcell
 
       # specify an EBS-optimized instance (optional)
       launch_options[:ebs_optimized] = true if opts['ebs_optimized']
+
+      # specify termination protection (optional)
+      launch_options[:disable_api_termination] = true if opts['termination_protection']
 
       # specify placement group (optional)
       if opts['instance_initiated_shutdown_behavior']

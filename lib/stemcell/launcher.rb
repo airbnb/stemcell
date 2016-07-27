@@ -164,9 +164,6 @@ module Stemcell
       # specify an EBS-optimized instance (optional)
       launch_options[:ebs_optimized] = true if opts['ebs_optimized']
 
-      # specify termination protection (optional)
-      launch_options[:disable_api_termination] = true if opts['termination_protection']
-
       # specify placement group (optional)
       if opts['instance_initiated_shutdown_behavior']
         launch_options[:instance_initiated_shutdown_behavior] =
@@ -206,6 +203,13 @@ module Stemcell
         set_classic_link(instances, opts['classic_link'])
         @log.info "succesfully applied classic link settings (if any)"
 
+        # turn on termination protection
+        # we do this now to make sure all other settings worked
+        if opts['termination_protection']
+          enable_termination_protection(instances)
+          @log.info "succesfully enabled termination protection"
+        end
+
         # wait for aws to report instance stats
         if opts.fetch('wait', true)
           wait(instances)
@@ -230,7 +234,7 @@ module Stemcell
 
       errors = run_batch_operation(instances) do |instance|
         begin
-          @log.warn "Terminating instance #{instance.instance_id}"
+          @log.warn "Terminating instance #{instance.id}"
           instance.terminate
           nil # nil == success
         rescue AWS::EC2::Errors::InvalidInstanceID::NotFound => e
@@ -331,6 +335,24 @@ module Stemcell
         end
       end
       check_errors(:set_classic_link, instances.map(&:id), errors)
+    end
+
+    def enable_termination_protection(instances)
+      @log.info "enabling termination protection on instance(s)"
+      errors = run_batch_operation(instances) do |instance|
+        begin
+          resp = @ec2.modify_instance_attribute({
+              :instance_id => instance.id,
+              :disable_api_termination => {
+                :value => true
+              }
+            })
+          resp.error  # returns nil (success) unless there was an error
+        rescue StandardError => e
+          e
+        end
+      end
+      check_errors(:enable_termination_protection, instances.map(&:id), errors)
     end
 
     # attempt to accept keys as file paths

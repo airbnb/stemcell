@@ -301,6 +301,7 @@ module Stemcell
     end
 
     def set_classic_link(left_to_process, classic_link)
+      return unless classic_link
       return unless classic_link['vpc_id']
       return unless classic_link['security_group_ids'] && !classic_link['security_group_ids'].empty?
 

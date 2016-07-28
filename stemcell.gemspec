@@ -6,7 +6,7 @@ Gem::Specification.new do |s|
   s.name          = "stemcell"
   s.version       = Stemcell::VERSION
   s.authors       = ["Martin Rhoads", "Igor Serebryany", "Nelson Gauthier", "Patrick Viet"]
-  s.email         = ["martin.rhoads@airbnb.com", "igor.serebryany@airbnb.com"]
+  s.email         = ["igor.serebryany@airbnb.com"]
   s.description   = %q{A tool for launching and bootstrapping EC2 instances}
   s.summary       = %q{no summary}
   s.homepage      = "https://github.com/airbnb/stemcell"
@@ -24,6 +24,11 @@ Gem::Specification.new do |s|
   else
     s.add_runtime_dependency 'chef',     ['>= 11.4.0', '< 12.0.0']
   end
+
+  # this is a transitive dependency, but the latest vesion has a late ruby
+  # version dependency. lets explicitly include it here. if this becomes
+  # no-longer a dependency of chef via chef-zero, then remove it
+  s.add_runtime_dependency 'rack', '< 2.0.0'
 
   s.add_runtime_dependency 'trollop',    '~> 2.1'
   s.add_runtime_dependency 'aws-creds',  '~> 0.2.3'

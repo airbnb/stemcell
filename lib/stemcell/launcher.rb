@@ -8,9 +8,8 @@ require "stemcell/option_parser"
 
 module Stemcell
   class Launcher
-
     REQUIRED_OPTIONS = [
-      'region'
+      'region',
     ]
 
     REQUIRED_LAUNCH_PARAMETERS = [
@@ -51,8 +50,10 @@ module Stemcell
       'security_groups',
       'security_group_ids',
       'tags',
+      'classic_link',
       'iam_role',
       'ebs_optimized',
+      'termination_protection',
       'block_device_mappings',
       'ephemeral_devices',
       'placement_group'
@@ -61,36 +62,24 @@ module Stemcell
     TEMPLATE_PATH = '../templates/bootstrap.sh.erb'
     LAST_BOOTSTRAP_LINE = "Stemcell bootstrap finished successfully!"
 
+    MAX_RUNNING_STATE_WAIT_TIME = 300 # seconds
+    RUNNING_STATE_WAIT_SLEEP_TIME = 5 # seconds
+
     def initialize(opts={})
       @log = Logger.new(STDOUT)
       @log.level = Logger::INFO unless ENV['DEBUG']
       @log.debug "creating new stemcell object"
       @log.debug "opts are #{opts.inspect}"
 
-      REQUIRED_OPTIONS.each do |req|
-        raise ArgumentError, "missing required param #{req}" unless opts[req]
-        instance_variable_set("@#{req}",opts[req])
+      REQUIRED_OPTIONS.each do |opt|
+        raise ArgumentError, "missing required option 'region'" unless opts[opt]
       end
 
-      @ec2_url = "ec2.#{@region}.amazonaws.com"
-      @timeout = 300
-      @start_time = Time.new
-
-      aws_configs = {:region => @region}
-      aws_configs.merge!({
-        :access_key_id     => @aws_access_key,
-        :secret_access_key => @aws_secret_key
-      }) if @aws_access_key && @aws_secret_key
-      AWS.config(aws_configs)
-
-      if opts['vpc_id']
-        puts 'using vpc tho'
-        @ec2 = AWS::VPC.new(opts['vpc_id'], :ec2_endpoint => @ec2_url)
-      else
-        @ec2 = AWS::EC2.new(:ec2_endpoint => @ec2_url)
-      end
+      @region = opts['region']
+      @vpc_id = opts['vpc_id']
+      @aws_access_key = opts['aws_access_key']
+      @aws_secret_key = opts['aws_secret_key']
     end
-
 
     def launch(opts={})
       verify_required_options(opts, REQUIRED_LAUNCH_PARAMETERS)
@@ -191,10 +180,22 @@ module Stemcell
       # launch instances
       instances = do_launch(launch_options)
 
-      # set tags on all instances launched
+      # everything from here on out must succeed, or we kill the instances we just launched
       begin
+        # set tags on all instances launched
         set_tags(instances, tags)
-        @log.info "sent ec2 api requests successfully"
+        @log.info "sent ec2 api tag requests successfully"
+
+        # link to classiclink
+        set_classic_link(instances, opts['classic_link'])
+        @log.info "succesfully applied classic link settings (if any)"
+
+        # turn on termination protection
+        # we do this now to make sure all other settings worked
+        if opts['termination_protection']
+          enable_termination_protection(instances)
+          @log.info "succesfully enabled termination protection"
+        end
 
         # wait for aws to report instance stats
         if opts.fetch('wait', true)
@@ -215,24 +216,19 @@ module Stemcell
       return instances
     end
 
-    def find_instance(id)
-      return @ec2.instances[id]
-    end
+    def kill(instances, opts={})
+      return if !instances || instances.empty?
 
-    def kill(instance_ids, opts={})
-      return if instance_ids.nil?
-
-      errors = run_batch_operation(instance_ids) do |id|
+      errors = run_batch_operation(instances) do |instance|
         begin
-          instance = find_instance(id)
-          @log.warn "Terminating instance #{instance.instance_id}"
+          @log.warn "Terminating instance #{instance.id}"
           instance.terminate
           nil # nil == success
         rescue AWS::EC2::Errors::InvalidInstanceID::NotFound => e
           opts[:ignore_not_found] ? nil : e
         end
       end
-      check_errors(:kill, instance_ids, errors)
+      check_errors(:kill, instances.map(&:id), errors)
     end
 
     # this is made public for ec2admin usage
@@ -259,22 +255,18 @@ module Stemcell
     end
 
     def wait(instances)
-      @log.info "Waiting up to #{@timeout} seconds for #{instances.count} " \
-                "instance(s) (#{instances.inspect}):"
+      @log.info "Waiting up to #{MAX_RUNNING_STATE_WAIT_TIME} seconds for #{instances.count} " \
+                "instance(s): (#{instances.inspect})"
 
-      while !instances.all? { |i| i.status == :running }
-        elapsed = Time.now - @start_time
-        if elapsed >= @timeout
-          raise TimeoutError, "exceded timeout of #{@timeout}"
-        else
-          sleep min(5, @timeout - elapsed)
-        end
+      times_out_at = Time.now + MAX_RUNNING_STATE_WAIT_TIME
+      until instances.all?{ |i| i.status == :running }
+        wait_time_expire_or_sleep(times_out_at)
       end
 
       @log.info "all instances in running state"
     end
 
-    def verify_required_options(params,required_options)
+    def verify_required_options(params, required_options)
       @log.debug "params is #{params}"
       @log.debug "required_options are #{required_options}"
       required_options.each do |required|
@@ -287,7 +279,7 @@ module Stemcell
     def do_launch(opts={})
       @log.debug "about to launch instance(s) with options #{opts}"
       @log.info "launching instances"
-      instances = @ec2.instances.create(opts)
+      instances = ec2.instances.create(opts)
       instances = [instances] unless Array === instances
       instances.each do |instance|
         @log.info "launched instance #{instance.instance_id}"
@@ -306,6 +298,59 @@ module Stemcell
         end
       end
       check_errors(:set_tags, instances.map(&:id), errors)
+    end
+
+    def set_classic_link(left_to_process, classic_link)
+      return unless classic_link['vpc_id']
+      return unless classic_link['security_group_ids'] && !classic_link['security_group_ids'].empty?
+
+      @log.info "applying classic link settings on #{left_to_process.count} instance(s)"
+
+      errors = []
+      processed = []
+      times_out_at = Time.now + MAX_RUNNING_STATE_WAIT_TIME
+      until left_to_process.empty?
+        wait_time_expire_or_sleep(times_out_at)
+
+        # we can only apply classic link when instances are in the running state
+        # lets apply classiclink as instances become available so we don't wait longer than necessary
+        recently_running = left_to_process.select{ |inst| inst.status == :running }
+        left_to_process = left_to_process.reject{ |inst| recently_running.include?(inst) }
+
+        processed += recently_running
+        errors += run_batch_operation(recently_running) do |instance|
+          begin
+            result = ec2.client.attach_classic_link_vpc({
+                :instance_id => instance.id,
+                :vpc_id => classic_link['vpc_id'],
+                :groups => classic_link['security_group_ids'],
+              })
+            result.error
+          rescue StandardError => e
+            e
+          end
+        end
+      end
+
+      check_errors(:set_classic_link, processed.map(&:id), errors)
+    end
+
+    def enable_termination_protection(instances)
+      @log.info "enabling termination protection on instance(s)"
+      errors = run_batch_operation(instances) do |instance|
+        begin
+          resp = ec2.client.modify_instance_attribute({
+              :instance_id => instance.id,
+              :disable_api_termination => {
+                :value => true
+              }
+            })
+          resp.error  # returns nil (success) unless there was an error
+        rescue StandardError => e
+          e
+        end
+      end
+      check_errors(:enable_termination_protection, instances.map(&:id), errors)
     end
 
     # attempt to accept keys as file paths
@@ -347,6 +392,38 @@ module Stemcell
         instance_ids,
         instance_ids.zip(errors).reject { |i, e| e.nil? }
       )
+    end
+
+    def ec2
+      return @ec2 if @ec2
+
+      # configure AWS with creds/region
+      aws_configs = {:region => @region}
+      aws_configs.merge!({
+        :access_key_id     => @aws_access_key,
+        :secret_access_key => @aws_secret_key
+      }) if @aws_access_key && @aws_secret_key
+      AWS.config(aws_configs)
+
+      # calculate our ec2 url
+      ec2_url = "ec2.#{@region}.amazonaws.com"
+
+      if @vpc_id
+        @ec2 = AWS::VPC.new(@vpc_id, :ec2_endpoint => ec2_url)
+      else
+        @ec2 = AWS::EC2.new(:ec2_endpoint => ec2_url)
+      end
+
+      @ec2
+    end
+
+    def wait_time_expire_or_sleep(times_out_at)
+      now = Time.now
+      if now >= times_out_at
+        raise TimeoutError, "exceded timeout of #{MAX_RUNNING_STATE_WAIT_TIME} seconds"
+      else
+        sleep [RUNNING_STATE_WAIT_SLEEP_TIME, times_out_at - now].min
+      end
     end
   end
 end

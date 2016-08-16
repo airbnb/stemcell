@@ -1,3 +1,6 @@
+# 0.10.2
+- Don't make 'key_name' a required launch parameter.
+
 # 0.9.1
 - Don't require aws keys for Stemcell::Launcher to allow for launching via iam role
 

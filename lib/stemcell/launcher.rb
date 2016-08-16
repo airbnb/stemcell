@@ -19,7 +19,6 @@ module Stemcell
       'git_branch',
       'git_key',
       'git_origin',
-      'key_name',
       'instance_type',
       'image_id',
       'availability_zone',
@@ -103,9 +102,12 @@ module Stemcell
       launch_options = {
         :image_id => opts['image_id'],
         :instance_type => opts['instance_type'],
-        :key_name => opts['key_name'],
         :count => opts['count'],
       }
+
+      if opts['key_name']
+        launch_options[:key_name] = opts['key_name']
+      end
 
       if opts['security_groups'] && !opts['security_groups'].empty?
         launch_options[:security_groups] = opts['security_groups']

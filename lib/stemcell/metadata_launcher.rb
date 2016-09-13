@@ -35,12 +35,14 @@ module Stemcell
     end
 
     def determine_options(role, environment, override_options)
+      override_contexts = override_options.delete('contexts').split(',') rescue []
       # Initially assume that empty roles are not allowed
       allow_empty = false
       begin
         return source.expand_role(
           role,
           environment,
+          override_contexts,
           override_options,
           :allow_empty_roles => allow_empty)
       rescue EmptyRoleError

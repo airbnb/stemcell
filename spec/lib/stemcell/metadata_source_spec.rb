@@ -64,6 +64,7 @@ describe Stemcell::MetadataSource do
     let(:backing_options)    { Hash.new }
     let(:availability_zones) { Hash.new }
     let(:role_metadata)      { Hash.new }
+    let(:override_contexts)  { Array.new }
     let(:override_options)   { Hash.new }
     let(:expand_options)     { Hash.new }
 
@@ -81,6 +82,7 @@ describe Stemcell::MetadataSource do
       metadata_source.expand_role(
         role,
         environment,
+        override_contexts,
         override_options,
         expand_options)
     end
@@ -206,6 +208,22 @@ describe Stemcell::MetadataSource do
 
           it "substitutes an availability zone from the config" do
             expect(expansion['availability_zone']).to eql 'us-east-1a'
+          end
+        end
+
+        context "when context overrides" do
+          before do
+            override_contexts << 'another_account'
+            role_metadata.merge!({'security_groups' => 'default_group'})
+            role_metadata.merge!({'context_overrides' => {'another_account' => {'security_groups' => 'another_group'}}})
+          end
+
+          it 'returns the overrode security groups' do
+            expect(expansion['security_groups']).to eql 'another_group'
+          end
+
+          it 'delete "context_overrides" key from Chef options' do
+            expect(expansion).not_to have_key('context_overrides')
           end
         end
 

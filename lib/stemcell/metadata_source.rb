@@ -43,7 +43,7 @@ module Stemcell
       DEFAULT_OPTIONS.merge(config.default_options)
     end
 
-    def expand_role(role, environment, override_options={}, options={})
+    def expand_role(role, environment, contexts=[], override_options={}, options={})
       raise ArgumentError, "Missing chef role" unless role
       raise ArgumentError, "Missing chef environment" unless environment
       allow_empty_roles = options.fetch(:allow_empty_roles, false)
@@ -54,6 +54,16 @@ module Stemcell
       role_empty   = role_options.nil? || role_options.empty?
 
       raise EmptyRoleError if !allow_empty_roles && role_empty
+
+      # Step 1.5: Override context specific values
+      if !role_empty
+        context_overrides = role_options['context_overrides'] || {}
+        contexts.each do |context|
+          overriding_hash = context_overrides[context]
+          role_options.merge!(overriding_hash) if overriding_hash
+        end
+        role_options.delete('context_overrides')
+      end
 
       # Step 2: Determine the backing store from available options.
 

@@ -212,14 +212,18 @@ describe Stemcell::MetadataSource do
         end
 
         context "when context overrides" do
-          before {override_contexts << 'another_account'}
-          before {
+          before do
+            override_contexts << 'another_account'
             role_metadata.merge!({'security_groups' => 'default_group'})
             role_metadata.merge!({'context_overrides' => {'another_account' => {'security_groups' => 'another_group'}}})
-          }
+          end
 
           it 'returns the overrode security groups' do
             expect(expansion['security_groups']).to eql 'another_group'
+          end
+
+          it 'delete "context_overrides" key from Chef options' do
+            expect(expansion).not_to have_key('context_overrides')
           end
         end
 

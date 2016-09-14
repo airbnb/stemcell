@@ -260,6 +260,12 @@ module Stemcell
         :type  => nil,
         :env   => 'NON_INTERACTIVE',
         :short => :f
+      },
+      {
+        :name  => 'contexts',
+        :desc  => "comma-separated list of contexts to override certain values",
+        :type  => String,
+        :env   => "CONTEXTS",
       }
     ]
 

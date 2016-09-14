@@ -1,6 +1,13 @@
 # 0.11.0
 - allow user to specify `contexts` to override certain attributes
 
+# 0.10.1
+- check for nil classic link
+
+# 0.10.0
+- allow launching termination-protected instances
+- enable classic link
+
 # 0.9.1
 - Don't require aws keys for Stemcell::Launcher to allow for launching via iam role
 

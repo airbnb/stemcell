@@ -204,9 +204,27 @@ EOF
 
 
 run_chef() {
-  echo "doing initial chef run..."
-  $converge 1>&2
-  echo "initial chef run complete"
+  set +e # unset e to allow retries
+  converge_succeed=false
+  for atmpt in $(seq 1 3);
+  do
+    echo "doing initial chef run... (attempt $atmpt)"
+    $converge 1>&2
+    if [ $? -eq 0 ]; then
+      converge_succeed=true
+      break
+    fi
+  done
+
+  if [ $converge_succeed == true ]; then
+    echo "initial chef run completes successfully"
+  else
+    echo "****************************************"
+    echo "*  WARNING: initial converge failed!   *"
+    echo "****************************************"
+  fi
+
+  set -e
 }
 
 

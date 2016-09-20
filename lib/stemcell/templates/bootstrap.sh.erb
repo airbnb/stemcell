@@ -46,6 +46,7 @@ data_bag_secret='<%= opts["chef_data_bag_secret"] %>'
 hostname='<%= opts['instance_hostname'] %>'
 domain_name='<%= opts['instance_domain_name'] %>'
 chef_version='<%= opts['chef_version'] %>'
+username='<%= opts.fetch('user', ENV['USER']) %>'
 
 
 ##
@@ -145,6 +146,9 @@ configure_chef() {
   echo "$environment" > $envfile
   chmod 644 $envfile
 
+  echo "$username" > $launchedbyfile
+  chmod 644 $launchedbyfile
+
   echo "configuring chef solo..."
   cat<<EOF > ${chef_dir}/solo.rb
 repo_dir =    "${repo_dir}"
@@ -230,6 +234,7 @@ start_chef_daemon() {
 repo_dir=${chef_dir}/src
 keyfile=${chef_dir}/git_key
 envfile=${chef_dir}/environment
+launchedbyfile=${chef_dir}/launched_by
 rolefile=${chef_dir}/role
 branchfile=${chef_dir}/branch
 originfile=${chef_dir}/origin

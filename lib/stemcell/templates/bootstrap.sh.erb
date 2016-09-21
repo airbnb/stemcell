@@ -1,12 +1,6 @@
 #!/bin/bash -e
 #
 # This script will bootstrap and run chef
-#
-# You need to specify a role, origin, git_key, branch name, and data
-# bag secret info below
-#
-# Martin Rhoads
-
 
 (
 echo 'Acquiring converge lock...'
@@ -16,13 +10,11 @@ echo 'Lock acquired!'
 set -o pipefail
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
-
 # ensure we were called by root
 if [ $UID != 0 ]; then
   echo "this script needs to be run as root. exiting..."
   exit 1
 fi
-
 
 # redirect stdout to /var/log/init
 exec >> /var/log/init
@@ -36,6 +28,14 @@ exec 2>> /var/log/init.err
 ##
 
 chef_dir=/etc/chef
+repo_dir=${chef_dir}/src
+keyfile=${chef_dir}/git_key
+envfile=${chef_dir}/environment
+launchedbyfile=${chef_dir}/launched_by
+rolefile=${chef_dir}/role
+branchfile=${chef_dir}/branch
+originfile=${chef_dir}/origin
+git_wrapper=${chef_dir}/git_wrapper
 converge=/usr/local/bin/first_converge
 role=<%= opts['chef_role'] %>
 environment=<%= opts['chef_environment'] %>
@@ -46,18 +46,17 @@ data_bag_secret='<%= opts["chef_data_bag_secret"] %>'
 hostname='<%= opts['instance_hostname'] %>'
 domain_name='<%= opts['instance_domain_name'] %>'
 chef_version='<%= opts['chef_version'] %>'
+username='<%= opts.fetch('user', ENV['USER']) %>'
 
 
 ##
-## common function
+## common functions
 ##
-
 
 update() {
   echo updating apt repo
   apt-get update 1>&2
 }
-
 
 install() {
   if ! (dpkg -l | awk '{print $2}' | grep -q ^$1$ ) ; then
@@ -66,7 +65,6 @@ install() {
     apt-get install -y $1 1>&2
   fi
 }
-
 
 set_hostname() {
   instance_id=`curl --silent --retry 5 --retry-delay 5 169.254.169.254/latest/meta-data/instance-id` 1>&2
@@ -130,7 +128,6 @@ update_repo() {
   echo "done updating code"
 }
 
-
 configure_chef() {
   echo "saving current origin ($origin), branch ($branch), role ($role), and environment ($environment)"
   echo "$origin" > $originfile
@@ -145,16 +142,21 @@ configure_chef() {
   echo "$environment" > $envfile
   chmod 644 $envfile
 
+  echo "$username" > $launchedbyfile
+  chmod 644 $launchedbyfile
+
   echo "configuring chef solo..."
   cat<<EOF > ${chef_dir}/solo.rb
-repo_dir =    "${repo_dir}"
-cookbook_path "#{repo_dir}/cookbooks"
-role_path     "#{repo_dir}/roles"
+repo_dir = "${repo_dir}"
+
+cookbook_path ["#{repo_dir}/site-cookbooks", "#{repo_dir}/cookbooks"]
+role_path "#{repo_dir}/roles"
 data_bag_path "#{repo_dir}/data_bags"
 ssl_verify_mode :verify_peer
+log_level :info
+log_location STDOUT
 
-log_level        :info
-log_location     STDOUT
+Ohai::Config[:plugin_path] << "#{repo_dir}/ohai_plugins"
 EOF
 
   encrypted_data_bag_secret_file=${chef_dir}/encrypted_data_bag_secret
@@ -164,8 +166,7 @@ EOF
   echo "chef configured"
 }
 
-
-configure_converger() {
+configure_converge() {
   cat<<EOF > $converge
 #!/bin/bash -eu
 
@@ -198,27 +199,28 @@ EOF
   chmod 544 $converge
 }
 
-configure_chef_daemon() {
-  cat<<EOF > /etc/init/chef-solo.conf
-description     "chef-solo"
-author          "Martin Rhoads"
-start on networking
-script
-chef-solo --interval 600 --splay 600  | logger -t chef-solo 2>&1
-end script
-respawn
-EOF
-}
-
-
 run_chef() {
-  echo "doing initial chef run..."
-  $converge 1>&2
-  echo "initial chef run complete"
-}
+  set +e # unset e to allow retries
+  converge_succeed=false
+  for atmpt in $(seq 1 3);
+  do
+    echo "doing initial chef run... (attempt $atmpt)"
+    $converge 1>&2
+    if [ $? -eq 0 ]; then
+      converge_succeed=true
+      break
+    fi
+  done
 
-start_chef_daemon() {
-  start chef-solo
+  if [ $converge_succeed == true ]; then
+    echo "initial chef run completes successfully"
+  else
+    echo "****************************************"
+    echo "*  WARNING: initial converge failed!   *"
+    echo "****************************************"
+  fi
+
+  set -e
 }
 
 
@@ -226,17 +228,7 @@ start_chef_daemon() {
 ## main
 ##
 
-#some derived vars
-repo_dir=${chef_dir}/src
-keyfile=${chef_dir}/git_key
-envfile=${chef_dir}/environment
-rolefile=${chef_dir}/role
-branchfile=${chef_dir}/branch
-originfile=${chef_dir}/origin
-git_wrapper=${chef_dir}/git_wrapper
-
 echo "starting chef bootstrapping..."
-mkdir -p ${chef_dir}
 update
 install curl
 install git
@@ -245,17 +237,7 @@ install_chef
 create_ohai_hint
 update_repo
 configure_chef
-configure_converger
+configure_converge
 run_chef
-
-configure_chef_daemon
-# start_chef_daemon
-
-
-##
-## exit
-##
-
-
 echo "<%= last_bootstrap_line %>"
 ) 200> /var/run/converge.lock

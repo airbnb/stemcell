@@ -1,12 +1,6 @@
 #!/bin/bash -e
 #
 # This script will bootstrap and run chef
-#
-# You need to specify a role, origin, git_key, branch name, and data
-# bag secret info below
-#
-# Martin Rhoads
-
 
 (
 echo 'Acquiring converge lock...'
@@ -16,13 +10,11 @@ echo 'Lock acquired!'
 set -o pipefail
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
-
 # ensure we were called by root
 if [ $UID != 0 ]; then
   echo "this script needs to be run as root. exiting..."
   exit 1
 fi
-
 
 # redirect stdout to /var/log/init
 exec >> /var/log/init
@@ -36,6 +28,14 @@ exec 2>> /var/log/init.err
 ##
 
 chef_dir=/etc/chef
+repo_dir=${chef_dir}/src
+keyfile=${chef_dir}/git_key
+envfile=${chef_dir}/environment
+launchedbyfile=${chef_dir}/launched_by
+rolefile=${chef_dir}/role
+branchfile=${chef_dir}/branch
+originfile=${chef_dir}/origin
+git_wrapper=${chef_dir}/git_wrapper
 converge=/usr/local/bin/first_converge
 role=<%= opts['chef_role'] %>
 environment=<%= opts['chef_environment'] %>
@@ -50,15 +50,13 @@ username='<%= opts.fetch('user', ENV['USER']) %>'
 
 
 ##
-## common function
+## common functions
 ##
-
 
 update() {
   echo updating apt repo
   apt-get update 1>&2
 }
-
 
 install() {
   if ! (dpkg -l | awk '{print $2}' | grep -q ^$1$ ) ; then
@@ -67,7 +65,6 @@ install() {
     apt-get install -y $1 1>&2
   fi
 }
-
 
 set_hostname() {
   instance_id=`curl --silent --retry 5 --retry-delay 5 169.254.169.254/latest/meta-data/instance-id` 1>&2
@@ -131,7 +128,6 @@ update_repo() {
   echo "done updating code"
 }
 
-
 configure_chef() {
   echo "saving current origin ($origin), branch ($branch), role ($role), and environment ($environment)"
   echo "$origin" > $originfile
@@ -168,8 +164,7 @@ EOF
   echo "chef configured"
 }
 
-
-configure_converger() {
+configure_converge() {
   cat<<EOF > $converge
 #!/bin/bash -eu
 
@@ -202,7 +197,6 @@ EOF
   chmod 544 $converge
 }
 
-
 run_chef() {
   set +e # unset e to allow retries
   converge_succeed=false
@@ -232,18 +226,7 @@ run_chef() {
 ## main
 ##
 
-#some derived vars
-repo_dir=${chef_dir}/src
-keyfile=${chef_dir}/git_key
-envfile=${chef_dir}/environment
-launchedbyfile=${chef_dir}/launched_by
-rolefile=${chef_dir}/role
-branchfile=${chef_dir}/branch
-originfile=${chef_dir}/origin
-git_wrapper=${chef_dir}/git_wrapper
-
 echo "starting chef bootstrapping..."
-mkdir -p ${chef_dir}
 update
 install curl
 install git
@@ -252,13 +235,7 @@ install_chef
 create_ohai_hint
 update_repo
 configure_chef
-configure_converger
+configure_converge
 run_chef
-
-##
-## exit
-##
-
-
 echo "<%= last_bootstrap_line %>"
 ) 200> /var/run/converge.lock

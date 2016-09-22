@@ -1,3 +1,6 @@
+# 0.11.2
+- fix undefined VERSION constant
+
 # 0.11.1
 - update bootstrap.sh to support launched_by file, site-cookbooks, ohai_plugins, and retries if the initial converge fails
 - include version in version string

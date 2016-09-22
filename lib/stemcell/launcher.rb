@@ -3,9 +3,6 @@ require 'logger'
 require 'erb'
 require 'set'
 
-require "stemcell/version"
-require "stemcell/option_parser"
-
 module Stemcell
   class Launcher
     REQUIRED_OPTIONS = [

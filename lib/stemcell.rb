@@ -1,3 +1,4 @@
+require 'stemcell/version'
 require 'stemcell/errors'
 require 'stemcell/command_line'
 require 'stemcell/option_parser'

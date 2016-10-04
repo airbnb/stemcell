@@ -1,3 +1,6 @@
+# 0.11.3
+- add legacy-mode flag to bootstrap.sh.erb when launching Chef 12.11 or newer
+
 # 0.11.2
 - fix undefined VERSION constant
 

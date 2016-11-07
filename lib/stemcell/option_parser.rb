@@ -383,7 +383,7 @@ module Stemcell
         options['block_device_mappings'] = block_device_mappings
       end
 
-      # convert security_groups from comma seperated string to ruby array
+      # convert security_groups from comma separated string to ruby array
       options['security_groups'] &&= options['security_groups'].split(',')
       options['security_group_ids'] &&= options['security_group_ids'].split(',')
       # convert ephemeral_devices from comma separated string to ruby array

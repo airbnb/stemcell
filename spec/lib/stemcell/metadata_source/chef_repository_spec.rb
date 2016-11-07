@@ -38,7 +38,7 @@ describe Stemcell::MetadataSource::ChefRepository do
     let(:environment) { 'production' }
     let(:role) { nil }
 
-    context "for a role with no inheritence" do
+    context "for a role with no inheritance" do
 
       context "and no attributes" do
         let(:role) { 'unit-simple-none' }
@@ -70,7 +70,7 @@ describe Stemcell::MetadataSource::ChefRepository do
 
     end
 
-    context "for a role with inheritence" do
+    context "for a role with inheritance" do
 
       context "and no attributes" do
         let(:role) { 'unit-inherit-none' }

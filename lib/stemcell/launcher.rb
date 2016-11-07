@@ -185,13 +185,13 @@ module Stemcell
 
         # link to classiclink
         set_classic_link(instances, opts['classic_link'])
-        @log.info "succesfully applied classic link settings (if any)"
+        @log.info "successfully applied classic link settings (if any)"
 
         # turn on termination protection
         # we do this now to make sure all other settings worked
         if opts['termination_protection']
           enable_termination_protection(instances)
-          @log.info "succesfully enabled termination protection"
+          @log.info "successfully enabled termination protection"
         end
 
         # wait for aws to report instance stats

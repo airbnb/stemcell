@@ -76,6 +76,7 @@ module Stemcell
       @vpc_id = opts['vpc_id']
       @aws_access_key = opts['aws_access_key']
       @aws_secret_key = opts['aws_secret_key']
+      @aws_session_token = opts['aws_session_token']
     end
 
     def launch(opts={})
@@ -401,13 +402,16 @@ module Stemcell
         :access_key_id     => @aws_access_key,
         :secret_access_key => @aws_secret_key
       }) if @aws_access_key && @aws_secret_key
+      aws_configs.merge!({
+        :session_token     => @aws_session_token,
+      }) if @aws_session_token
       AWS.config(aws_configs)
 
       # calculate our ec2 url
       ec2_url = "ec2.#{@region}.amazonaws.com"
 
       if @vpc_id
-        @ec2 = AWS::VPC.new(@vpc_id, :ec2_endpoint => ec2_url)
+        @ec2 = AWS::EC2::VPC.new(@vpc_id, :ec2_endpoint => ec2_url)
       else
         @ec2 = AWS::EC2.new(:ec2_endpoint => ec2_url)
       end

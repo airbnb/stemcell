@@ -103,6 +103,15 @@ module Stemcell
         :key_name => opts['key_name'],
         :count => opts['count'],
       }
+      
+      # Specify security groups
+      # (takes group names or ids [identified via their 'sg-' prefix])
+      security_groups_option = opts['security_groups']
+      if security_groups_option.try(:first).try(:slice, 0, 3) == 'sg-'
+        launch_options[:security_group_ids] = security_groups_option
+      else
+        launch_options[:security_groups] = security_groups_option
+      end
 
       if opts['security_groups'] && !opts['security_groups'].empty?
         launch_options[:security_groups] = opts['security_groups']

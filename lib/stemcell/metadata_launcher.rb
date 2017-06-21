@@ -95,9 +95,10 @@ module Stemcell
 
     def invoke_launcher(options={})
       launcher = Launcher.new({
-        'aws_access_key' => options['aws_access_key'],
-        'aws_secret_key' => options['aws_secret_key'],
-        'region'         => options['region'],
+        'aws_access_key'    => options['aws_access_key'],
+        'aws_secret_key'    => options['aws_secret_key'],
+        'aws_session_token' => options['aws_session_token'],
+        'region'            => options['region'],
       })
       # Slice off just the options used for launching.
       launch_options = {}

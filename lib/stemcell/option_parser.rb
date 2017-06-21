@@ -36,6 +36,13 @@ module Stemcell
         :hide  => true
       },
       {
+        :name  => 'aws_session_token',
+        :desc  => "aws session token",
+        :type  => String,
+        :env   => 'AWS_SESSION_TOKEN',
+        :hide  => true
+      },
+      {
         :name  => 'region',
         :desc  => "ec2 region to launch in",
         :type  => String,

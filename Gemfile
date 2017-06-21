@@ -8,3 +8,5 @@ group :test do
   gem 'simplecov', :require => false
   gem 'rake', '~> 10.3.2'
 end
+
+gem 'nokogiri', '< 1.7.0'

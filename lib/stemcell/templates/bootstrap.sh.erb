@@ -47,7 +47,7 @@ hostname='<%= opts['instance_hostname'] %>'
 domain_name='<%= opts['instance_domain_name'] %>'
 chef_version='<%= opts['chef_version'] %>'
 username='<%= opts.fetch('user', ENV['USER']) %>'
-
+encrypted_data_bag_secret_path='<%= opts['chef_data_bag_secret_path'].to_s %>'
 
 ##
 ## common functions
@@ -158,6 +158,14 @@ log_location STDOUT
 
 Ohai::Config[:plugin_path] << "#{repo_dir}/ohai_plugins"
 EOF
+
+  if [ -n "$encrypted_data_bag_secret_path" ]; then
+    cat <<EOF >> ${chef_dir}/solo.rb
+
+encrypted_data_bag_secret "${encrypted_data_bag_secret_path}"
+EOF
+  fi
+
 
   encrypted_data_bag_secret_file=${chef_dir}/encrypted_data_bag_secret
   echo -e "$data_bag_secret" > $encrypted_data_bag_secret_file

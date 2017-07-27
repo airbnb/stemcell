@@ -29,6 +29,7 @@ module Stemcell
       'chef_role',
       'chef_environment',
       'chef_data_bag_secret',
+      'chef_data_bag_secret_path',
       'git_branch',
       'git_key',
       'git_origin',

@@ -188,6 +188,12 @@ module Stemcell
         :env   => 'CHEF_DATA_BAG_SECRET'
       },
       {
+        :name  => 'chef_data_bag_secret_path',
+        :desc  => "instance-local path to the secret file",
+        :type  => String,
+        :env   => 'CHEF_DATA_BAG_SECRET_PATH'
+      },
+      {
         :name => 'chef_role',
         :desc => "chef role of instance to be launched",
         :type => String,

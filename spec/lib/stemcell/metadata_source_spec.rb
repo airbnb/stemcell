@@ -167,7 +167,7 @@ describe Stemcell::MetadataSource do
 
         it "calls the repository object to determine the role metadata" do
           role_metadata.merge!('image_id' => 'ami-nyancat')
-          expect(chef_repo).to receive(:metadata_for_role).with(role, environment) { role_metadata }
+          expect(chef_repo).to receive(:metadata_for_role).with(role, environment, {}) { role_metadata }
           expect(expansion['image_id']).to eql 'ami-nyancat'
         end
 
@@ -224,6 +224,30 @@ describe Stemcell::MetadataSource do
 
           it 'delete "context_overrides" key from Chef options' do
             expect(expansion).not_to have_key('context_overrides')
+          end
+        end
+
+        it "calls the config object to retrieve chef cookbook attributes" do
+          default_options.merge!('chef_cookbook_attributes' => ['a::b'])
+          expect(config).to receive(:default_options) { default_options }
+          expect(expansion['chef_cookbook_attributes']).to eql ['a::b']
+        end
+
+        context 'when the override options specify chef cookbook attributes' do
+          let(:options) { { :cookbook_attributes => ['c::d'] } }
+          it 'is the value in the override options' do
+            default_options.merge!('chef_cookbook_attributes' => ['a::b'])
+            override_options.merge!('chef_cookbook_attributes' => ['c::d'])
+            expect(chef_repo).to receive(:metadata_for_role).with(role, environment, options) { role_metadata }
+            expect(expansion['chef_cookbook_attributes']).to eql ['c::d']
+          end
+        end
+
+        context 'when the expand options specify chef normal attributes' do
+          before { expand_options[:normal_attributes] = { :a => :b } }
+          it 'is the value in the expand options' do
+            expect(chef_repo).to receive(:metadata_for_role).with(role, environment, expand_options) { role_metadata }
+            expect(expansion).to_not be_nil
           end
         end
 

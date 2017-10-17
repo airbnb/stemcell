@@ -48,9 +48,18 @@ module Stemcell
       raise ArgumentError, "Missing chef environment" unless environment
       allow_empty_roles = options.fetch(:allow_empty_roles, false)
 
-      # Step 1: Expand the role metadata
+      # Normal and cookbook attributes to load during role metadata expansion
+      normal_attributes     = options.fetch(:normal_attributes, {})
+      cookbook_attributes   = override_options['chef_cookbook_attributes']
+      cookbook_attributes ||= config.default_options['chef_cookbook_attributes']
+      cookbook_attributes ||= []
 
-      role_options = chef_repo.metadata_for_role(role, environment)
+      chef_options = {}
+      chef_options[:cookbook_attributes] = cookbook_attributes unless cookbook_attributes.empty?
+      chef_options[:normal_attributes] = normal_attributes unless normal_attributes.empty?
+
+      # Step 1: Expand the role metadata
+      role_options = chef_repo.metadata_for_role(role, environment, chef_options)
       role_empty   = role_options.nil? || role_options.empty?
 
       raise EmptyRoleError if !allow_empty_roles && role_empty

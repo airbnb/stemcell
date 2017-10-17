@@ -44,6 +44,16 @@ describe Stemcell::MetadataSource::Configuration do
       end
     end
 
+    context "when non-required options are present" do
+      let(:config_filename) { 'stemcell-cookbook-attribute.json' }
+      it "sets default_options" do
+        expect(config.default_options).to eql({
+          'instance_type' => 'm1.small',
+          'chef_cookbook_attributes' => ['cookbook_name::attr_file']
+        })
+      end
+    end
+
     context "when defaults are not specified" do
       let(:config_filename) { 'stemcell-defaults-missing.json' }
       it "raises" do

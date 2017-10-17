@@ -33,8 +33,10 @@ describe Stemcell::MetadataSource::ChefRepository do
   describe '#metadata_for_role' do
 
     let(:expected_metadata) { FixtureHelper.expected_metadata_for_role(role) }
-    let(:result_metadata)   { chef_repo.metadata_for_role(role, environment) }
+    let(:result_metadata)   { chef_repo.metadata_for_role(role, environment, options) }
 
+    let(:cookbook_attributes) { [] }
+    let(:options) { { :cookbook_attributes => cookbook_attributes } }
     let(:environment) { 'production' }
     let(:role) { nil }
 
@@ -97,6 +99,59 @@ describe Stemcell::MetadataSource::ChefRepository do
         let(:role) { 'unit-inherit-both' }
         it "returns the expected metdata" do
           expect(result_metadata).to eql(expected_metadata)
+        end
+      end
+
+    end
+
+    context "with chef cookbook attributes" do
+
+      context "that are not valid" do
+        let(:role) { 'unit-simple-none' }
+        let(:cookbook_attributes) { ['unknown::attr'] }
+        it "raises an error" do
+          expect { result_metadata }.to raise_error(Chef::Exceptions::CookbookNotFound)
+        end
+      end
+
+      context "for a role with no inheritance and default attributes" do
+        let(:role) { 'unit-simple-default' }
+        let(:cookbook_attributes) { ['unit_cookbook::simple-default'] }
+        it "returns the expected metdata" do
+          expect(result_metadata).to include(
+            "tags" => {
+              "tag1" => "tag1_value_default",
+              "tag2" => "tag2_value",
+              "tag3" => "tag3_value_attribute_default"
+            }
+          )
+        end
+      end
+
+      context "for a role with no inheritance and derived attributes" do
+        let(:role) { 'unit-simple-default' }
+        let(:cookbook_attributes) { ['unit_cookbook::simple-derived'] }
+        it "returns the expected metdata" do
+          expect(result_metadata).to include(
+            "tags" => {
+              "tag1" => "tag1_value_default",
+              "derived_tag1" => "tag1_value_default",
+              "tag2" => "tag2_value"
+            }
+          )
+        end
+      end
+
+      context "that override a role with no inheritance and default attributes" do
+        let(:role) { 'unit-simple-default' }
+        let(:cookbook_attributes) { ['unit_cookbook::simple-override'] }
+        it "returns the expected metdata" do
+          expect(result_metadata).to include(
+            "tags" => {
+              "tag1" => "tag1_value_default",
+              "tag2" => "tag2_value_override"
+            }
+          )
         end
       end
 

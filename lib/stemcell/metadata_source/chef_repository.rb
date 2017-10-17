@@ -25,11 +25,9 @@ module Stemcell
       end
 
       # This method will return nil if the role has no stemcell metdata.
-      def metadata_for_role(chef_role, chef_environment)
-        default_attrs, override_attrs = expand_role(chef_role, chef_environment)
-        # hash_only_merge is how chef combines override_attrs and default_attrs so that overrides "win"
-        merged_attrs = hash_only_merge!(default_attrs, override_attrs)
-        METADATA_ATTRIBUTES.inject(nil) { |r, key| r || merged_attrs[key] }
+      def metadata_for_role(chef_role, chef_environment, chef_options = {})
+        attrs = expand_role(chef_role, chef_environment, chef_options)
+        METADATA_ATTRIBUTES.inject(nil) { |r, key| r || attrs[key] }
       end
 
       private
@@ -40,14 +38,37 @@ module Stemcell
         Chef::Config[:role_path]     = File.join(chef_root, 'roles')
       end
 
-      def expand_role(chef_role, chef_environment)
-        run_list = Chef::RunList.new
-        run_list << "role[#{chef_role}]"
+      def expand_role(chef_role, chef_environment, chef_options)
+        node = Chef::Node.new
+        node.chef_environment = chef_environment
+        node.run_list << "role[#{chef_role}]"
 
-        expansion = run_list.expand(chef_environment, 'disk')
+        # Load cookbooks.
+        cookbook_loader = Chef::CookbookLoader.new(Chef::Config[:cookbook_path])
+        cookbook_attributes = chef_options.fetch(:cookbook_attributes, [])
+        cookbook_attributes.each do |file_spec|
+          cookbook_name, * = node.parse_attribute_file_spec(file_spec)
+          cookbook_loader.load_cookbook(cookbook_name)
+        end
+
+        cookbook_collection = Chef::CookbookCollection.new(cookbook_loader.cookbooks_by_name)
+        events = Chef::EventDispatch::Dispatcher.new
+        run_context = Chef::RunContext.new(node, cookbook_collection, events)
+
+        # Expand the node's run list.
+        expansion = node.run_list.expand(chef_environment, 'disk')
         raise RoleExpansionError if expansion.errors?
 
-        [expansion.default_attrs, expansion.override_attrs]
+        # Set the default and override attributes.
+        node.attributes.role_default = expansion.default_attrs
+        node.attributes.role_override = expansion.override_attrs
+
+        # Load cookbook attributes.
+        cookbook_attributes.each do |file_spec|
+          node.include_attribute(file_spec)
+        end
+
+        node.attributes
       end
 
     end

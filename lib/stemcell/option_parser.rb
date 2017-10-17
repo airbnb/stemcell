@@ -218,6 +218,12 @@ module Stemcell
         :env   => 'CHEF_ENVIRONMENT'
       },
       {
+        :name  => 'chef_cookbook_attributes',
+        :desc  => "comma-separated list of cookbook attribute files to load during role expansion",
+        :type  => String,
+        :env   => 'CHEF_COOKBOOK_ATTRIBUTES'
+      },
+      {
         :name  => 'git_origin',
         :desc  => "git origin to use",
         :type  => String,
@@ -401,6 +407,8 @@ module Stemcell
       options['security_group_ids'] &&= options['security_group_ids'].split(',')
       # convert ephemeral_devices from comma separated string to ruby array
       options['ephemeral_devices'] &&= options['ephemeral_devices'].split(',')
+      # convert chef_cookbook_attributes from comma separated string to ruby array
+      options['chef_cookbook_attributes'] &&= options['chef_cookbook_attributes'].split(',')
 
       # format the classic link options
       if options['classic_link_vpc_id']

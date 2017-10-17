@@ -243,6 +243,14 @@ describe Stemcell::MetadataSource do
           end
         end
 
+        context 'when the expand options specify chef normal attributes' do
+          before { expand_options[:normal_attributes] = { :a => :b } }
+          it 'is the value in the expand options' do
+            expect(chef_repo).to receive(:metadata_for_role).with(role, environment, expand_options) { role_metadata }
+            expect(expansion).to_not be_nil
+          end
+        end
+
       end
 
     end

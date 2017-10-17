@@ -36,7 +36,13 @@ describe Stemcell::MetadataSource::ChefRepository do
     let(:result_metadata)   { chef_repo.metadata_for_role(role, environment, options) }
 
     let(:cookbook_attributes) { [] }
-    let(:options) { { :cookbook_attributes => cookbook_attributes } }
+    let(:normal_attributes) { {} }
+    let(:options) {
+      {
+        :cookbook_attributes => cookbook_attributes,
+        :normal_attributes => normal_attributes
+      }
+    }
     let(:environment) { 'production' }
     let(:role) { nil }
 
@@ -150,6 +156,41 @@ describe Stemcell::MetadataSource::ChefRepository do
             "tags" => {
               "tag1" => "tag1_value_default",
               "tag2" => "tag2_value_override"
+            }
+          )
+        end
+      end
+
+    end
+
+    context "with normal attributes" do
+      let(:role) { 'unit-simple-default' }
+
+      context "for a role with default attribute" do
+        let(:normal_attributes) { { :instance_metadata => { :instance_type => 'test' } } }
+        it "returns the attribute with higher precedence" do
+          expect(result_metadata).to include("instance_type" => "test")
+        end
+      end
+
+      context "for a cookbook attribute" do
+        let(:role) { 'unit-simple-default' }
+        let(:cookbook_attributes) { ['unit_cookbook::simple-derived'] }
+        let(:normal_attributes) {
+          {
+            :instance_metadata => {
+              :tags => {
+                'tag1' => 'tag1_value_normal'
+              }
+            }
+          }
+        }
+        it "returns the normal/derived attribute" do
+          expect(result_metadata).to include(
+            "tags" => {
+              "tag1" => "tag1_value_normal",
+              "derived_tag1" => "tag1_value_normal",
+              "tag2" => "tag2_value"
             }
           )
         end

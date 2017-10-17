@@ -43,6 +43,9 @@ module Stemcell
         node.chef_environment = chef_environment
         node.run_list << "role[#{chef_role}]"
 
+        normal_attributes = chef_options.fetch(:normal_attributes, {})
+        node.consume_attributes(normal_attributes)
+
         # Load cookbooks.
         cookbook_loader = Chef::CookbookLoader.new(Chef::Config[:cookbook_path])
         cookbook_attributes = chef_options.fetch(:cookbook_attributes, [])

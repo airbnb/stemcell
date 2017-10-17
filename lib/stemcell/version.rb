@@ -1,3 +1,3 @@
 module Stemcell
-  VERSION = "0.11.3"
+  VERSION = "0.11.4"
 end

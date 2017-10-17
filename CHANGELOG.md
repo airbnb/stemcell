@@ -1,3 +1,7 @@
+# 0.11.4
+- Support for setting normal attributes in role expansio
+- Support for loading cookbook attributes
+
 # 0.11.3
 - add legacy-mode flag to bootstrap.sh.erb when launching Chef 12.11 or newer
 

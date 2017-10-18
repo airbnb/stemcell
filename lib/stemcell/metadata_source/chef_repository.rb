@@ -71,7 +71,7 @@ module Stemcell
           node.include_attribute(file_spec)
         end
 
-        node.attributes
+        Mash.new(node.attributes.to_hash)
       end
 
     end

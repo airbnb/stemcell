@@ -1,3 +1,6 @@
+# 0.11.6
+- Result of role expansion needs to be a mutable object
+
 # 0.11.5
 - No changes
 

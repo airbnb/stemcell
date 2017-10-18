@@ -1,3 +1,6 @@
+# 0.11.5
+- No changes
+
 # 0.11.4
 - Support for setting normal attributes in role expansio
 - Support for loading cookbook attributes

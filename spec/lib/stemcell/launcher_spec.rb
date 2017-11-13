@@ -14,6 +14,15 @@ class MockInstance
   end
 end
 
+class MockSecurityGroup
+  attr_reader :group_id, :name, :vpc_id
+  def initialize(id, name, vpc_id)
+    @group_id = id
+    @name = name
+    @vpc_id = vpc_id
+  end
+end
+
 class MockException < StandardError
 end
 
@@ -37,14 +46,24 @@ describe Stemcell::Launcher do
       allow(response).to receive(:error).and_return(nil)
     end
 
-    let(:classic_link) { {'vpc_id' => 'vpc_id', 'security_group_ids' => ['sg1', 'sg2']} }
+    let(:classic_link) {
+      {
+        'vpc_id' => 'vpc-1',
+        'security_group_ids' => ['sg-1', 'sg-2'],
+        'security_groups' => ['sg_name']
+      }
+    }
 
     it 'invokes classic link on all of the instances' do
+      expect(launcher).to receive(:get_vpc_security_group_ids).with('vpc-1', ['sg_name']).
+        and_call_original
+      expect_any_instance_of(AWS::EC2::VPC).to receive(:security_groups).
+        and_return([MockSecurityGroup.new('sg-3', 'sg_name', 'vpc-1')])
       instances.each do |instance|
         expect(client).to receive(:attach_classic_link_vpc).ordered.with(a_hash_including(
             :instance_id => instance.id,
             :vpc_id => classic_link['vpc_id'],
-            :groups => classic_link['security_group_ids'],
+            :groups => ['sg-1', 'sg-2', 'sg-3'],
           )).and_return(response)
       end
 

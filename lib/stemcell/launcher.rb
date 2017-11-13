@@ -299,10 +299,35 @@ module Stemcell
       check_errors(:set_tags, instances.map(&:id), errors)
     end
 
+    # Resolve security group names to their ids in the given VPC
+    def get_vpc_security_group_ids(vpc_id, group_names)
+      group_map = {}
+      @log.info "resolving security groups #{group_names} in #{vpc_id}"
+      vpc = AWS::EC2::VPC.new(vpc_id, :ec2_endpoint => "ec2.#{@region}.amazonaws.com")
+      vpc.security_groups.each do |sg|
+        next if sg.vpc_id != vpc_id
+        group_map[sg.name] = sg.group_id
+      end
+      group_ids = []
+      group_names.each do |sg_name|
+        raise "Couldn't find security group #{sg_name} in #{vpc_id}" unless group_map.has_key?(sg_name)
+        group_ids << group_map[sg_name]
+      end
+      group_ids
+    end
+
     def set_classic_link(left_to_process, classic_link)
       return unless classic_link
       return unless classic_link['vpc_id']
-      return unless classic_link['security_group_ids'] && !classic_link['security_group_ids'].empty?
+
+      security_group_ids = classic_link['security_group_ids'] || []
+      security_group_names = classic_link['security_groups'] || []
+      return if security_group_ids.empty? && security_group_names.empty?
+
+      if !security_group_names.empty?
+        extra_group_ids = get_vpc_security_group_ids(classic_link['vpc_id'], security_group_names)
+        security_group_ids = security_group_ids + extra_group_ids
+      end
 
       @log.info "applying classic link settings on #{left_to_process.count} instance(s)"
 
@@ -323,7 +348,7 @@ module Stemcell
             result = ec2.client.attach_classic_link_vpc({
                 :instance_id => instance.id,
                 :vpc_id => classic_link['vpc_id'],
-                :groups => classic_link['security_group_ids'],
+                :groups => security_group_ids,
               })
             result.error
           rescue StandardError => e

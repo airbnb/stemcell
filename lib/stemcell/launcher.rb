@@ -106,12 +106,19 @@ module Stemcell
         :count => opts['count'],
       }
 
-      if opts['security_groups'] && !opts['security_groups'].empty?
-        launch_options[:security_groups] = opts['security_groups']
-      end
-
       if opts['security_group_ids'] && !opts['security_group_ids'].empty?
         launch_options[:security_group_ids] = opts['security_group_ids']
+      end
+
+      if opts['security_groups'] && !opts['security_groups'].empty?
+        if @vpc_id
+          # convert sg names to sg ids as VPC only accepts ids
+          security_group_ids = get_vpc_security_group_ids(@vpc_id, opts['security_groups'])
+          launch_options[:security_group_ids] ||= []
+          launch_options[:security_group_ids].concat(security_group_ids)
+        else
+          launch_options[:security_groups] = opts['security_groups']
+        end
       end
 
       # specify availability zone (optional)

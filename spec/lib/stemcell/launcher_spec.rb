@@ -36,6 +36,61 @@ describe Stemcell::Launcher do
   let(:instances) { (1..4).map { |id| MockInstance.new(id) } }
   let(:instance_ids) { instances.map(&:id) }
 
+  describe '#launch' do
+    let(:ec2) { instance_double(AWS::EC2) }
+    let(:client) { double(AWS::EC2::Client) }
+    let(:response) { instance_double(AWS::Core::Response) }
+    let(:launcher) {
+      opts = {'region' => 'region', 'vpc_id' => 'vpc-1'}
+      launcher = Stemcell::Launcher.new(opts)
+      launcher
+    }
+    let(:launch_options) {
+      {
+        'chef_role'               => 'role',
+        'chef_environment'        => 'environment',
+        'chef_data_bag_secret'    => 'data_bag_secret',
+        'git_branch'              => 'branch',
+        'git_key'                 => 'key',
+        'git_origin'              => 'origin',
+        'key_name'                => 'key',
+        'instance_type'           => 'c1.xlarge',
+        'image_id'                => 'ami-d9d6a6b0',
+        'availability_zone'       => 'us-east-1a',
+        'count'                   => 2,
+        'security_groups'         => ['sg_name1', 'sg_name2'],
+        'wait'                    => false
+      }
+    }
+
+    before do
+      allow(launcher).to receive(:try_file).and_return('secret')
+      allow(launcher).to receive(:render_template).and_return('template')
+      allow(launcher).to receive(:ec2).and_return(ec2)
+      allow(ec2).to receive(:client).and_return(client)
+      allow(response).to receive(:error).and_return(nil)
+    end
+
+    it 'launches all of the instances' do
+      expect(launcher).to receive(:get_vpc_security_group_ids).
+        with('vpc-1', ['sg_name1', 'sg_name2']).and_call_original
+      expect_any_instance_of(AWS::EC2::VPC).to receive(:security_groups).
+        and_return([1,2].map { |i| MockSecurityGroup.new("sg-#{i}", "sg_name#{i}", 'vpc-1')})
+      expect(launcher).to receive(:do_launch).with(a_hash_including(
+          :image_id           => 'ami-d9d6a6b0',
+          :instance_type      => 'c1.xlarge',
+          :key_name           => 'key',
+          :count              => 2,
+          :security_group_ids => ['sg-1', 'sg-2'],
+          :availability_zone  => 'us-east-1a',
+          :user_data          => 'template'
+        )).and_return(instances)
+      expect(launcher).to receive(:set_tags).with(kind_of(Array), kind_of(Hash)).and_return(nil)
+
+      launcher.send(:launch, launch_options)
+    end
+  end
+
   describe '#set_classic_link' do
     let(:ec2) { instance_double(AWS::EC2) }
     let(:client) { double(AWS::EC2::Client) }

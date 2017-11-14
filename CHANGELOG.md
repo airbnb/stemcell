@@ -1,3 +1,7 @@
+# 0.11.7
+- Convert security group names to ids when launching VPC instances
+- Allow classic link to associate VPC security groups by name
+
 # 0.11.6
 - Result of role expansion needs to be a mutable object
 

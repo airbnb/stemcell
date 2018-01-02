@@ -1,4 +1,7 @@
 # 0.11.7
+- Configure AWS earlier to work around aws-sdk-v1 vpc bug
+
+# 0.11.7
 - Convert security group names to ids when launching VPC instances
 - Allow classic link to associate VPC security groups by name
 

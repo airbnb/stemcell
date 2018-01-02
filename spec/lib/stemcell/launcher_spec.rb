@@ -156,4 +156,15 @@ describe Stemcell::Launcher do
       expect(errors.all?(&:nil?)).to be true
     end
   end
+
+  describe '#configure_aws_creds_and_region' do
+    it 'AWS region is configured after launcher is instanciated' do
+      expect(AWS.config.region).to be_eql('region')
+    end
+
+    it 'AWS region configuration changed' do
+      mock_launcher = Stemcell::Launcher.new('region' => 'ap-northeast-1')
+      expect(AWS.config.region).to be_eql('ap-northeast-1')
+    end
+  end
 end

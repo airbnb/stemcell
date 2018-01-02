@@ -78,6 +78,7 @@ module Stemcell
       @aws_access_key = opts['aws_access_key']
       @aws_secret_key = opts['aws_secret_key']
       @aws_session_token = opts['aws_session_token']
+      configure_aws_creds_and_region
     end
 
     def launch(opts={})
@@ -429,17 +430,6 @@ module Stemcell
     def ec2
       return @ec2 if @ec2
 
-      # configure AWS with creds/region
-      aws_configs = {:region => @region}
-      aws_configs.merge!({
-        :access_key_id     => @aws_access_key,
-        :secret_access_key => @aws_secret_key
-      }) if @aws_access_key && @aws_secret_key
-      aws_configs.merge!({
-        :session_token     => @aws_session_token,
-      }) if @aws_session_token
-      AWS.config(aws_configs)
-
       # calculate our ec2 url
       ec2_url = "ec2.#{@region}.amazonaws.com"
 
@@ -459,6 +449,19 @@ module Stemcell
       else
         sleep [RUNNING_STATE_WAIT_SLEEP_TIME, times_out_at - now].min
       end
+    end
+
+    def configure_aws_creds_and_region
+      # configure AWS with creds/region
+      aws_configs = {:region => @region}
+      aws_configs.merge!({
+        :access_key_id     => @aws_access_key,
+        :secret_access_key => @aws_secret_key
+      }) if @aws_access_key && @aws_secret_key
+      aws_configs.merge!({
+        :session_token     => @aws_session_token,
+      }) if @aws_session_token
+      AWS.config(aws_configs)
     end
   end
 end

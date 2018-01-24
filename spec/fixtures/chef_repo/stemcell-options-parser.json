@@ -1,0 +1,29 @@
+{
+  "defaults": {
+    "region": "us-east-1",
+    "security_groups": ["sg1", "sg2"],
+    "instance_type": "m1.small",
+    "backing_store": "hvm1",
+    "git_origin": "git1",
+    "instance_domain_name": "example.com",
+    "chef_package_source": "https://example.com/chef.deb",
+    "chef_version": "12.12.15-1",
+    "chef_cookbook_attributes": ["name::attribute"],
+    "tags": {
+      "tag1": "value"
+    }
+  },
+
+  "backing_store": {
+    "hvm1": {
+      "image_id": "ami-1"
+    },
+    "pv1": {
+      "image_id": "ami-2"
+    }
+  },
+
+  "availability_zones": {
+    "us-east-1": ["us-east-1a", "us-east-1b", "us-east-1c", "us-east-1e"]
+  }
+}

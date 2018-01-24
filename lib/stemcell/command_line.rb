@@ -125,13 +125,14 @@ module Stemcell
     end
 
     def transform_parser_defaults(pd)
-      # There are two special cases: security groups and tags. Security groups
+      # There are some special cases, eg security groups and tags. Security groups
       # are an array in the template, but trollop expects a string. Likewise,
       # in the case of tags, they are represented as a hash, but trollop wants
       # a string once again. In both cases, the data types are encoded as a
       # comma-separated list when presented as defaults.
       pd['security_groups'] &&= pd['security_groups'].join(',')
       pd['tags'] &&= pd['tags'].to_a.map { |p| p.join('=') }.join(',')
+      pd['chef_cookbook_attributes'] &&= pd['chef_cookbook_attributes'].join(',')
     end
 
     def parse_options_or_print_help

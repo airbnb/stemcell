@@ -1,4 +1,8 @@
-# 0.11.7
+# 0.11.9
+- Transform chef_cookbook_attributes option for command-line parser
+- Set vpc_id when creating Launcher object
+
+# 0.11.8
 - Configure AWS earlier to work around aws-sdk-v1 vpc bug
 
 # 0.11.7

@@ -99,6 +99,7 @@ module Stemcell
         'aws_secret_key'    => options['aws_secret_key'],
         'aws_session_token' => options['aws_session_token'],
         'region'            => options['region'],
+        'vpc_id'            => options['vpc_id'],
       })
       # Slice off just the options used for launching.
       launch_options = {}

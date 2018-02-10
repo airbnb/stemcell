@@ -78,6 +78,7 @@ module Stemcell
       @aws_access_key = opts['aws_access_key']
       @aws_secret_key = opts['aws_secret_key']
       @aws_session_token = opts['aws_session_token']
+      @max_attempts = opts['max_attempts'] || 3
       configure_aws_creds_and_region
     end
 
@@ -391,7 +392,6 @@ module Stemcell
         File.read(File.expand_path(opt)) rescue opt
     end
 
-    MAX_ATTEMPTS = 3
     INITIAL_RETRY_SEC = 1
 
     # Return a Hash of instance => error. Empty hash indicates "no error"
@@ -404,7 +404,7 @@ module Stemcell
         begin
           attempt = 0
           result = nil
-          while attempt < MAX_ATTEMPTS
+          while attempt < @max_attempts
             # sleep idempotently except for the first attempt
             sleep(INITIAL_RETRY_SEC * 2 ** attempt) if attempt != 0
             result = yield(instance)

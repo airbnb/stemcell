@@ -291,7 +291,15 @@ module Stemcell
         :desc  => "comma-separated list of contexts to override certain values",
         :type  => String,
         :env   => "CONTEXTS",
-      }
+      },
+      {
+        :name  => 'batch_operation_retries',
+        :desc  => "maximum number of retries",
+        :type  => Integer,
+        :env   => 'BATCH_OPERATION_RETRIES',
+        :short => :r,
+        :default => 3,
+      },
     ]
 
     def initialize(config={})

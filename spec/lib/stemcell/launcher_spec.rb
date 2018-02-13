@@ -155,6 +155,24 @@ describe Stemcell::Launcher do
       end
       expect(errors.all?(&:nil?)).to be true
     end
+
+    it "retries up to max_attempts option per instance" do
+      max_attempts = 6
+      opts = {'region' => 'region', 'max_attempts' => max_attempts}
+      launcher = Stemcell::Launcher.new(opts)
+      allow(launcher).to receive(:sleep).and_return(0)
+      tags = double("Tags")
+      instances = (1..2).map do |id|
+        inst = MockInstance.new(id)
+        allow(inst).to receive(:tags).and_return(tags)
+        inst
+      end
+      expect(tags).to receive(:set).with({'a' => 'b'}).exactly(12).times.
+        and_raise(AWS::EC2::Errors::InvalidInstanceID::NotFound.new("error"))
+      expect do
+        launcher.send(:set_tags, instances, {'a' => 'b'})
+      end.to raise_error(Stemcell::IncompleteOperation)
+    end
   end
 
   describe '#configure_aws_creds_and_region' do

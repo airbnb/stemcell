@@ -100,6 +100,7 @@ module Stemcell
         'aws_session_token' => options['aws_session_token'],
         'region'            => options['region'],
         'vpc_id'            => options['vpc_id'],
+        'max_attempts'      => options['batch_operation_retries'],
       })
       # Slice off just the options used for launching.
       launch_options = {}

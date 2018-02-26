@@ -195,8 +195,10 @@ module Stemcell
         @log.info "sent ec2 api tag requests successfully"
 
         # link to classiclink
-        set_classic_link(instances, opts['classic_link'])
-        @log.info "successfully applied classic link settings (if any)"
+        if @vpc_id.nil?
+          set_classic_link(instances, opts['classic_link'])
+          @log.info "successfully applied classic link settings (if any)"
+        end
 
         # turn on termination protection
         # we do this now to make sure all other settings worked

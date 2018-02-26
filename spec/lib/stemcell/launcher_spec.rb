@@ -86,6 +86,8 @@ describe Stemcell::Launcher do
           :user_data          => 'template'
         )).and_return(instances)
       expect(launcher).to receive(:set_tags).with(kind_of(Array), kind_of(Hash)).and_return(nil)
+      # set_classic_link should not be set on vpc hosts.
+      expect(launcher).not_to receive(:set_classic_link)
 
       launcher.send(:launch, launch_options)
     end

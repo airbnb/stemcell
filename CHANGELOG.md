@@ -1,3 +1,7 @@
+# 0.11.10
+- Configurable number of retries for batch operations
+- Do not set set_classic_link on vpc instances
+
 # 0.11.9
 - Transform chef_cookbook_attributes option for command-line parser
 - Set vpc_id when creating Launcher object

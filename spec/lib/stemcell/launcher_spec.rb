@@ -91,6 +91,14 @@ describe Stemcell::Launcher do
 
       launcher.send(:launch, launch_options)
     end
+
+    it 'calls set_classic_link for non vpc instances' do
+      launcher = Stemcell::Launcher.new({'region' => 'region', 'vpc_id' => false})
+      expect(launcher).to receive(:set_classic_link)
+      expect(launcher).to receive(:set_tags).with(kind_of(Array), kind_of(Hash)).and_return(nil)
+      expect(launcher).to receive(:do_launch).and_return(instances)
+      launcher.send(:launch, launch_options)
+    end
   end
 
   describe '#set_classic_link' do

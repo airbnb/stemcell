@@ -195,7 +195,7 @@ module Stemcell
         @log.info "sent ec2 api tag requests successfully"
 
         # link to classiclink
-        if @vpc_id.nil?
+        unless @vpc_id
           set_classic_link(instances, opts['classic_link'])
           @log.info "successfully applied classic link settings (if any)"
         end

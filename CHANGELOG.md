@@ -1,3 +1,6 @@
+# 0.11.11
+- Fix set_classic_link issue - vpc_id could be nil or false
+
 # 0.11.10
 - Configurable number of retries for batch operations
 - Do not set set_classic_link on vpc instances

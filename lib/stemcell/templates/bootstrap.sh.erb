@@ -147,6 +147,7 @@ configure_chef() {
 
   echo "configuring chef solo..."
   cat<<EOF > ${chef_dir}/solo.rb
+# chef config (https://docs.chef.io/config_rb_client.html)
 repo_dir = "${repo_dir}"
 
 cookbook_path ["#{repo_dir}/site-cookbooks", "#{repo_dir}/cookbooks"]
@@ -156,7 +157,13 @@ ssl_verify_mode :verify_peer
 log_level :info
 log_location STDOUT
 
-Ohai::Config[:plugin_path] << "#{repo_dir}/ohai_plugins"
+if Gem::Version.new(Chef::VERSION) >= Gem::Version.new('13')
+  ohai.plugin_path << "#{repo_dir}/ohai_plugins"
+else # support for chef < 13
+  # https://docs.chef.io/deprecations_ohai_legacy_config.html
+  Ohai::Config[:plugin_path] << "#{repo_dir}/ohai_plugins"
+end
+
 EOF
 
   if [ -n "$encrypted_data_bag_secret_path" ]; then

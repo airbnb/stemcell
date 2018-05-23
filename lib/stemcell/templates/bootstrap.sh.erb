@@ -153,16 +153,11 @@ repo_dir = "${repo_dir}"
 cookbook_path ["#{repo_dir}/site-cookbooks", "#{repo_dir}/cookbooks"]
 role_path "#{repo_dir}/roles"
 data_bag_path "#{repo_dir}/data_bags"
+ohai.plugin_path << "#{repo_dir}/ohai_plugins"
+
 ssl_verify_mode :verify_peer
 log_level :info
 log_location STDOUT
-
-if Gem::Version.new(Chef::VERSION) >= Gem::Version.new('13')
-  ohai.plugin_path << "#{repo_dir}/ohai_plugins"
-else # support for chef < 13
-  # https://docs.chef.io/deprecations_ohai_legacy_config.html
-  Ohai::Config[:plugin_path] << "#{repo_dir}/ohai_plugins"
-end
 
 EOF
 

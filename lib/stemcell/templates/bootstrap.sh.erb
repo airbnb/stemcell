@@ -147,16 +147,18 @@ configure_chef() {
 
   echo "configuring chef solo..."
   cat<<EOF > ${chef_dir}/solo.rb
+# chef config (https://docs.chef.io/config_rb_client.html)
 repo_dir = "${repo_dir}"
 
 cookbook_path ["#{repo_dir}/site-cookbooks", "#{repo_dir}/cookbooks"]
 role_path "#{repo_dir}/roles"
 data_bag_path "#{repo_dir}/data_bags"
+ohai.plugin_path << "#{repo_dir}/ohai_plugins"
+
 ssl_verify_mode :verify_peer
 log_level :info
 log_location STDOUT
 
-Ohai::Config[:plugin_path] << "#{repo_dir}/ohai_plugins"
 EOF
 
   if [ -n "$encrypted_data_bag_secret_path" ]; then

@@ -1,3 +1,7 @@
+# 0.12.0
+- Require Nokogiri ~> 1.8.2 due to vulnerability CVE-2017-15412
+- Require ruby version >= 2.1 for Nokogiri compatibility
+
 # 0.11.11
 - Fix set_classic_link issue - vpc_id could be nil or false
 

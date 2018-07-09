@@ -29,7 +29,7 @@ Gem::Specification.new do |s|
   # version dependency. lets explicitly include it here. if this becomes
   # no-longer a dependency of chef via chef-zero, then remove it
   s.add_runtime_dependency 'rack', '< 2.0.0'
-  s.add_runtime_dependency 'nokogiri', '< 1.7.0'
+  s.add_runtime_dependency 'nokogiri', '~> 1.8.2'
   s.add_runtime_dependency 'ffi-yajl', '< 2.3.1'
 
   s.add_runtime_dependency 'trollop',    '~> 2.1'

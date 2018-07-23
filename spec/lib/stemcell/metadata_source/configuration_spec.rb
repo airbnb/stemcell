@@ -32,7 +32,9 @@ describe Stemcell::MetadataSource::Configuration do
       it "sets backing_store_options" do
         expect(config.backing_store_options).to eql({
           'instance_store' => {
-            'image_id' => 'ami-d9d6a6b0'
+            'us-east-1' => {
+              'image_id' => 'ami-d9d6a6b0'
+            }
           }
         })
       end
@@ -86,10 +88,11 @@ describe Stemcell::MetadataSource::Configuration do
 
   describe '#options_for_backing_store' do
     let(:backing_store) { 'instance_store' }
+    let(:region) { 'us-east-1' }
 
     context "when the backing store definition exists" do
       it "returns the options" do
-        expect(config.options_for_backing_store(backing_store)).to eql({
+        expect(config.options_for_backing_store(backing_store, region)).to eql({
           'image_id' => 'ami-d9d6a6b0'
         })
       end
@@ -97,10 +100,20 @@ describe Stemcell::MetadataSource::Configuration do
 
     context "when the backing store isn't defined" do
       let(:backing_store) { 'nyanstore' }
+      let(:region) { 'us-east-1' }
       it "raises" do
-        expect { config.options_for_backing_store(backing_store) }.to raise_error(
+        expect { config.options_for_backing_store(backing_store, region) }.to raise_error(
           Stemcell::UnknownBackingStoreError
         )
+      end
+    end
+
+    context "when the legacy backing store definition exists" do
+      let(:config_filename) { 'stemcell-backing-store-legacy.json' }
+      it "returns the options" do
+        expect(config.options_for_backing_store(backing_store, region)).to eql({
+          'image_id' => 'ami-d9d6a6b0'
+        })
       end
     end
 

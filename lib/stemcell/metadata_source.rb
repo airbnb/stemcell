@@ -84,9 +84,14 @@ module Stemcell
       backing_store ||= config.default_options['backing_store']
       backing_store ||= DEFAULT_BACKING_STORE
 
+      backing_store_region   = override_options['region']
+      backing_store_region ||= role_options.to_hash['region'] if role_options
+      backing_store_region ||= config.default_options['region']
+      backing_store_region ||= DEFAULT_OPTIONS['region']
+
       # Step 3: Retrieve the backing store options from the defaults.
 
-      backing_store_options = config.options_for_backing_store(backing_store)
+      backing_store_options = config.options_for_backing_store(backing_store, backing_store_region)
       backing_store_options['backing_store'] = backing_store
 
       # Step 4: Merge the options together in priority order.

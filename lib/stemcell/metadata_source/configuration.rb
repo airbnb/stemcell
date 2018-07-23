@@ -21,10 +21,10 @@ module Stemcell
         validate_configutation
       end
 
-      def options_for_backing_store(backing_store)
+      def options_for_backing_store(backing_store, region)
         options = backing_store_options[backing_store]
         raise UnknownBackingStoreError.new(backing_store) if options.nil?
-        options
+        options.fetch(region, options)
       end
 
       def random_az_for_region(region)

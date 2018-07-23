@@ -1,3 +1,8 @@
+# 0.12.1
+- Add support for Amazon Linux to the default bootstrap script
+- Allow setting backing_store options per region
+- Display private ip for launched instances
+
 # 0.12.0
 - Require Nokogiri ~> 1.8.2 due to vulnerability CVE-2017-15412
 - Require ruby version >= 2.1 for Nokogiri compatibility

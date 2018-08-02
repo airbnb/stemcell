@@ -161,7 +161,8 @@ describe Stemcell::MetadataSource do
         it "calls the config object to retrieve the backing store options" do
           backing_options.merge!('image_id' => 'ami-nyancat')
           override_options.merge!('backing_store' => 'ebs')
-          expect(config).to receive(:options_for_backing_store).with('ebs') { backing_options }
+          override_options.merge!('region' => 'us-east-1')
+          expect(config).to receive(:options_for_backing_store).with('ebs', 'us-east-1') { backing_options }
           expect(expansion['image_id']).to eql 'ami-nyancat'
         end
 

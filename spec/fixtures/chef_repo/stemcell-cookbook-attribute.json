@@ -5,7 +5,9 @@
   },
   "backing_store": {
     "instance_store": {
-      "image_id": "ami-d9d6a6b0"
+      "us-east-1": {
+        "image_id": "ami-d9d6a6b0"
+      }
     }
   },
   "availability_zones": {

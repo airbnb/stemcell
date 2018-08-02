@@ -258,7 +258,8 @@ module Stemcell
       puts "\nhere is the info for what's launched:"
       instances.each do |instance|
         puts "\tinstance_id: #{instance.instance_id}"
-        puts "\tpublic ip:   #{instance.public_ip_address}"
+        puts "\tpublic ip:   #{instance.public_ip_address || 'none'}"
+        puts "\tprivate ip:  #{instance.private_ip_address || 'none'}"
         puts
       end
       puts "install logs will be in /var/log/init and /var/log/init.err"

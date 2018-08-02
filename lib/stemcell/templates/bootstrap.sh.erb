@@ -54,16 +54,33 @@ encrypted_data_bag_secret_path='<%= opts['chef_data_bag_secret_path'].to_s %>'
 ##
 
 update() {
-  echo updating apt repo
-  apt-get update 1>&2
+  echo updating repository metadata
+
+  case $OS_PACKAGE_MANAGER in
+    apt)
+      apt-get update 1>&2
+      ;;
+    yum)
+      # yum install will check if metadata needs to be updated
+      # so it's just for consistency with apt-based distros
+      yum check-update 1>&2 || true
+      ;;
+  esac
 }
 
 install() {
-  if ! (dpkg -l | awk '{print $2}' | grep -q ^$1$ ) ; then
-    echo installing $1...
-    export DEBIAN_FRONTEND=noninteractive
-    apt-get install -y $1 1>&2
-  fi
+  case $OS_PACKAGE_MANAGER in
+    apt)
+      if ! (dpkg -l | awk '{print $2}' | grep -q ^$1$ ) ; then
+        echo installing $1...
+        export DEBIAN_FRONTEND=noninteractive
+        apt-get install -y $1 1>&2
+      fi
+      ;;
+    yum)
+      rpm -q $1 2>&1 >/dev/null || yum install -y $1
+      ;;
+  esac
 }
 
 set_hostname() {
@@ -86,22 +103,34 @@ set_hostname() {
   echo "$local_ip $fqdn $hostname" >> /etc/hosts
 }
 
+download_chef_package() {
+  echo "Downloading chef from $1"
+  wget "$1" -O "$2" --progress=dot:mega --tries=15 --retry-connrefused --timeout=5 --wait=10 --random-wait --continue --no-dns-cache
+}
+
 install_chef() {
+  package_local="/tmp/chef_${chef_version}.${OS_PACKAGE_EXT}"
+  package_url="$(render_chef_url)"
+
   # check to see if chef is already installed
   if ! which chef-solo > /dev/null ; then
-    platform=`lsb_release -s -i | tr '[:upper:]' '[:lower:]'`
-    platform_version=`lsb_release -s -r`
-    arch=`uname -m`
-    package_local="/tmp/chef_${chef_version}.deb"
-    package_url="<%= opts['chef_package_source'] %>"
-    echo "Downloading chef from $package_url"
-    wget $package_url -O $package_local --progress=dot:mega
-    echo "Installing chef $chef_version"
-    dpkg -i $package_local
-    rm $package_local
+    case $OS_PACKAGE_MANAGER in
+      apt)
+        download_chef_package "$package_url" "$package_local"
+        echo "Installing chef $chef_version"
+        dpkg -i $package_local
+        ;;
+      yum)
+        download_chef_package "$package_url" "$package_local"
+        echo "Installing chef $chef_version"
+        rpm -ivh "$package_local"
+        ;;
+    esac
   else
     echo chef is already installed
   fi
+
+  rm -f $package_local
 }
 
 create_ohai_hint() {
@@ -154,7 +183,6 @@ cookbook_path ["#{repo_dir}/site-cookbooks", "#{repo_dir}/cookbooks"]
 role_path "#{repo_dir}/roles"
 data_bag_path "#{repo_dir}/data_bags"
 ohai.plugin_path << "#{repo_dir}/ohai_plugins"
-
 ssl_verify_mode :verify_peer
 log_level :info
 log_location STDOUT
@@ -199,7 +227,7 @@ git reset --hard origin/\${branch}
 git clean -fdx
 
 json="{\"role\": \"\${role}\", \"env\": \"\${env}\", \"branch\": \"\${branch}\"}"
-json_file=\`tempfile\`
+json_file=\`mktemp\`
 echo \$json > \$json_file
 trap "{ rm -f '\$json_file' ; }" EXIT
 
@@ -237,12 +265,55 @@ run_chef() {
   set -e
 }
 
+render_chef_url() {
+  base_url="<%= opts['chef_package_source'] %>"
+  echo $base_url | sed \
+    -e "s/%{platform}/$OS_PLATFORM/g" \
+    -e "s/%{platform_version}/$OS_PLATFORM_VERSION/g" \
+    -e "s/%{chef_version}/$chef_version/g" \
+    -e "s/%{package_manager}/$OS_PACKAGE_MANAGER/g" \
+    -e "s/%{package_arch}/$OS_PACKAGE_ARCH/g" \
+    -e "s/%{package_ext}/$OS_PACKAGE_EXT/g"
+}
+
+check_os_version() {
+  NAME=unsupported
+
+  if [ -f /etc/os-release ]; then
+    . /etc/os-release
+  fi
+
+  case "$NAME" in
+    "Ubuntu")
+      OS_VERSION="$NAME $VERSION_ID"
+      OS_PLATFORM=ubuntu
+      OS_PLATFORM_VERSION=$VERSION_ID
+      OS_PACKAGE_MANAGER=apt
+      OS_PACKAGE_ARCH=$(dpkg --print-architecture)
+      OS_PACKAGE_EXT=deb
+      ;;
+    "Amazon Linux")
+      OS_VERSION="$NAME $VERSION_ID"
+      OS_PLATFORM=amazon
+      OS_PLATFORM_VERSION=$VERSION_ID
+      OS_PACKAGE_MANAGER=yum
+      OS_PACKAGE_ARCH=$(uname -m)
+      OS_PACKAGE_EXT=rpm
+      ;;
+    *)
+      echo "Unsupported operating system"
+      exit 1
+      ;;
+  esac
+}
 
 ##
 ## main
 ##
 
-echo "starting chef bootstrapping..."
+check_os_version
+
+echo "starting chef bootstrapping on ${OS_VERSION}..."
 update
 install curl
 install git

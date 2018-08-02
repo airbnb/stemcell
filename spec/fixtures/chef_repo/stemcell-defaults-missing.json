@@ -1,7 +1,9 @@
 {
   "backing_store": {
     "instance_store": {
-      "baz": "woo"
+      "us-east-1": {
+        "baz": "woo"
+      }
     }
   },
   "availability_zones": {

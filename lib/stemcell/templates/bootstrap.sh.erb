@@ -31,6 +31,7 @@ chef_dir=/etc/chef
 repo_dir=${chef_dir}/src
 keyfile=${chef_dir}/git_key
 envfile=${chef_dir}/environment
+jsonfile=${chef_dir}/nodejson
 launchedbyfile=${chef_dir}/launched_by
 rolefile=${chef_dir}/role
 branchfile=${chef_dir}/branch
@@ -48,6 +49,7 @@ domain_name='<%= opts['instance_domain_name'] %>'
 chef_version='<%= opts['chef_version'] %>'
 username='<%= opts.fetch('user', ENV['USER']) %>'
 encrypted_data_bag_secret_path='<%= opts['chef_data_bag_secret_path'].to_s %>'
+node_json='<%= opts['node_json'] %>'
 
 ##
 ## common functions
@@ -158,7 +160,7 @@ update_repo() {
 }
 
 configure_chef() {
-  echo "saving current origin ($origin), branch ($branch), role ($role), and environment ($environment)"
+  echo "saving current origin ($origin), branch ($branch), role ($role), environment ($environment), and node_json ($node_json)"
   echo "$origin" > $originfile
   chmod 644 $originfile
 
@@ -173,6 +175,9 @@ configure_chef() {
 
   echo "$username" > $launchedbyfile
   chmod 644 $launchedbyfile
+
+  echo "$node_json" > $jsonfile
+  chmod 644 $jsonfile
 
   echo "configuring chef solo..."
   cat<<EOF > ${chef_dir}/solo.rb
@@ -212,6 +217,7 @@ repo="${repo_dir}"
 branch=\`cat ${branchfile}\`
 role=\`cat ${rolefile}\`
 env=\`cat ${envfile}\`
+node_json=\`cat ${jsonfile}\`
 
 cd \${repo}
 
@@ -226,7 +232,9 @@ GIT_SSH=${git_wrapper} git fetch
 git reset --hard origin/\${branch}
 git clean -fdx
 
-json="{\"role\": \"\${role}\", \"env\": \"\${env}\", \"branch\": \"\${branch}\"}"
+base_json="{\"role\": \"\${role}\", \"env\": \"\${env}\", \"branch\": \"\${branch}\"}"
+json=\`echo \$node_json \$base_json | jq -s '.[0] + .[1]'\`
+
 json_file=\`mktemp\`
 echo \$json > \$json_file
 trap "{ rm -f '\$json_file' ; }" EXIT
@@ -317,6 +325,7 @@ echo "starting chef bootstrapping on ${OS_VERSION}..."
 update
 install curl
 install git
+install jq
 set_hostname
 install_chef
 create_ohai_hint

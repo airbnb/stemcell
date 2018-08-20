@@ -54,7 +54,8 @@ module Stemcell
       'termination_protection',
       'block_device_mappings',
       'ephemeral_devices',
-      'placement_group'
+      'placement_group',
+      'node_json',
     ]
 
     TEMPLATE_PATH = '../templates/bootstrap.sh.erb'
@@ -179,6 +180,14 @@ module Stemcell
             :virtual_name => "ephemeral#{i}"
           })
         end
+      end
+
+      if opts['node_json'].is_a?(Hash)
+        opts['node_json'] = JSON.generate(opts['node_json'])
+      end
+
+      unless opts['node_json'].is_a?(String)
+        opts['node_json'] = '{}'
       end
 
       # generate user data script to bootstrap instance, include in launch

@@ -233,7 +233,7 @@ trap "{ rm -f '\$json_file' ; }" EXIT
 
 echo "running chef-solo with runlist \$runlist and json \$json (in file \$json_file)"
 <% if opts['chef_version'].to_f >= 12.11 %>
-chef-solo --legacy-mode -o "\${runlist}" -j \${json_file} "\$@"
+chef-solo --config ${chef_dir}/solo.rb -o "\${runlist}" -j \${json_file} "\$@"
 <% else %>
 chef-solo -o "\${runlist}" -j \${json_file} "\$@"
 <% end %>

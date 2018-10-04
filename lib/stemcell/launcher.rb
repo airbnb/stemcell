@@ -96,9 +96,14 @@ module Stemcell
         'created_by' => opts.fetch('user', ENV['USER']),
         'stemcell' => VERSION,
       }
+
       # Short name if we're in production
       tags['Name'] = opts['chef_role'] if opts['chef_environment'] == 'production'
       tags.merge!(opts['tags']) if opts['tags']
+
+      # Delete tags with nil value, as this isn't allowed by AWS
+      # (also makes it possible to clear/skip the defaults above)
+      tags.delete_if { |k, v| v.nil? }
 
       # generate launch options
       launch_options = {

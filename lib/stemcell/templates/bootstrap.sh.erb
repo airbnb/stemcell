@@ -235,14 +235,11 @@ GIT_SSH=${git_wrapper} git fetch
 git reset --hard origin/\${branch}
 git clean -fdx
 
-base_json="{\"role\": \"\${role}\", \"env\": \"\${env}\", \"branch\": \"\${branch}\"}"
-json=\`echo \$node_json \$base_json | jq -s '.[0] + .[1]'\`
-
 json_file=\`mktemp\`
-echo \$json > \$json_file
+echo \$node_json > \$json_file
 trap "{ rm -f '\$json_file' ; }" EXIT
 
-echo "running chef-solo with runlist \$runlist and json \$json (in file \$json_file)"
+echo "running chef-solo with runlist \$runlist and json \$node_json (in file \$json_file)"
 <% if opts['chef_version'].to_f >= 12.11 %>
 chef-solo --legacy-mode -o "\${runlist}" -j \${json_file} "\$@"
 <% else %>
@@ -328,7 +325,6 @@ echo "starting chef bootstrapping on ${OS_VERSION}..."
 update
 install curl
 install git
-install jq
 set_hostname
 install_chef
 create_ohai_hint

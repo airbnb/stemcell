@@ -190,6 +190,12 @@ module Stemcell
         opts['node_json'] = {}
       end
 
+      opts['node_json'].merge!({
+        'role' => opts['chef_role'],
+        'env' => opts['chef_environment'],
+        'branch' => opts['git_branch'],
+      })
+
       opts['node_json'] = JSON.generate(opts['node_json'])
 
       # generate user data script to bootstrap instance, include in launch

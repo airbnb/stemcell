@@ -49,7 +49,10 @@ domain_name='<%= opts['instance_domain_name'] %>'
 chef_version='<%= opts['chef_version'] %>'
 username='<%= opts.fetch('user', ENV['USER']) %>'
 encrypted_data_bag_secret_path='<%= opts['chef_data_bag_secret_path'].to_s %>'
-node_json='<%= opts['node_json'] %>'
+node_json=$(cat <<'EOF'
+<%= opts['node_json'] %>
+EOF
+)
 
 ##
 ## common functions

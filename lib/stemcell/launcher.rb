@@ -192,7 +192,7 @@ module Stemcell
 
       opts['node_json'].merge!({
         'role' => opts['chef_role'],
-        'env' => opts['chef_environment'],
+        'env' => opts['chef_environment'], # deprecated, use `node.chef_environment` in recipes instead
         'branch' => opts['git_branch'],
       })
 

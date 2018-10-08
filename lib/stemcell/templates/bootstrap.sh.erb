@@ -190,6 +190,7 @@ repo_dir = "${repo_dir}"
 cookbook_path ["#{repo_dir}/site-cookbooks", "#{repo_dir}/cookbooks"]
 role_path "#{repo_dir}/roles"
 data_bag_path "#{repo_dir}/data_bags"
+environment_path "#{repo_dir}/environments"
 ohai.plugin_path << "#{repo_dir}/ohai_plugins"
 ssl_verify_mode :verify_peer
 log_level :info
@@ -241,9 +242,9 @@ trap "{ rm -f '\$json_file' ; }" EXIT
 
 echo "running chef-solo with runlist \$runlist and json \$node_json (in file \$json_file)"
 <% if opts['chef_version'].to_f >= 12.11 %>
-chef-solo --legacy-mode -o "\${runlist}" -j \${json_file} "\$@"
+chef-solo --legacy-mode -o "\${runlist}" -j \${json_file} -E \${env} "\$@"
 <% else %>
-chef-solo -o "\${runlist}" -j \${json_file} "\$@"
+chef-solo -o "\${runlist}" -j \${json_file} -E \${env} "\$@"
 <% end %>
 EOF
   chmod 544 $converge

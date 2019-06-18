@@ -43,6 +43,12 @@ module Stemcell
         :hide  => true
       },
       {
+        :name  => 'ec2_endpoint',
+        :desc  => 'EC2 endpoint',
+        :type  => String,
+        :env   => 'EC2_ENDPOINT',
+      },
+      {
         :name  => 'region',
         :desc  => "ec2 region to launch in",
         :type  => String,

@@ -75,6 +75,7 @@ module Stemcell
 
       @region = opts['region']
       @vpc_id = opts['vpc_id']
+      @ec2_endpoint = opts['ec2_endpoint']
       @aws_access_key = opts['aws_access_key']
       @aws_secret_key = opts['aws_secret_key']
       @aws_session_token = opts['aws_session_token']
@@ -315,7 +316,7 @@ module Stemcell
     def get_vpc_security_group_ids(vpc_id, group_names)
       group_map = {}
       @log.info "resolving security groups #{group_names} in #{vpc_id}"
-      vpc = AWS::EC2::VPC.new(vpc_id, :ec2_endpoint => "ec2.#{@region}.amazonaws.com")
+      vpc = AWS::EC2::VPC.new(vpc_id)
       vpc.security_groups.each do |sg|
         next if sg.vpc_id != vpc_id
         group_map[sg.name] = sg.group_id
@@ -433,13 +434,10 @@ module Stemcell
     def ec2
       return @ec2 if @ec2
 
-      # calculate our ec2 url
-      ec2_url = "ec2.#{@region}.amazonaws.com"
-
       if @vpc_id
-        @ec2 = AWS::EC2::VPC.new(@vpc_id, :ec2_endpoint => ec2_url)
+        @ec2 = AWS::EC2::VPC.new(@vpc_id)
       else
-        @ec2 = AWS::EC2.new(:ec2_endpoint => ec2_url)
+        @ec2 = AWS::EC2.new
       end
 
       @ec2
@@ -457,6 +455,9 @@ module Stemcell
     def configure_aws_creds_and_region
       # configure AWS with creds/region
       aws_configs = {:region => @region}
+      aws_configs.merge!({
+        :ec2_endpoint      => @ec2_endpoint
+      }) if @ec2_endpoint
       aws_configs.merge!({
         :access_key_id     => @aws_access_key,
         :secret_access_key => @aws_secret_key

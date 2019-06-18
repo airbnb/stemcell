@@ -195,4 +195,18 @@ describe Stemcell::Launcher do
       expect(AWS.config.region).to be_eql('ap-northeast-1')
     end
   end
+
+  describe '#ec2' do
+    it 'can return a client with regional endpoint' do
+      launcher = Stemcell::Launcher.new({'region' => 'region1', 'ec2_endpoint' => nil})
+      client = launcher.send(:ec2)
+      expect(client.config.ec2_endpoint).to be_eql('ec2.region1.amazonaws.com')
+    end
+
+    it 'can return a client with custom endpoint' do
+      launcher = Stemcell::Launcher.new({'region' => 'region1', 'ec2_endpoint' => 'endpoint1'})
+      client = launcher.send(:ec2)
+      expect(client.config.ec2_endpoint).to be_eql('endpoint1')
+    end
+  end
 end

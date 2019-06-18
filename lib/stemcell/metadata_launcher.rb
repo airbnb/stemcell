@@ -101,6 +101,7 @@ module Stemcell
         'region'            => options['region'],
         'vpc_id'            => options['vpc_id'],
         'max_attempts'      => options['batch_operation_retries'],
+        'ec2_endpoint'      => options['ec2_endpoint'],
       })
       # Slice off just the options used for launching.
       launch_options = {}

@@ -1,3 +1,6 @@
+# 0.12.2
+- Support for using a custom EC2 endpoint
+
 # 0.12.1
 - Add support for Amazon Linux to the default bootstrap script
 - Allow setting backing_store options per region

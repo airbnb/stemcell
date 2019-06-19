@@ -54,7 +54,8 @@ module Stemcell
       'termination_protection',
       'block_device_mappings',
       'ephemeral_devices',
-      'placement_group'
+      'placement_group',
+      'node_json',
     ]
 
     TEMPLATE_PATH = '../templates/bootstrap.sh.erb'
@@ -181,6 +182,22 @@ module Stemcell
           })
         end
       end
+
+      unless opts['node_json'].is_a?(Hash) || opts['node_json'].nil?
+        raise '`node_json` must be a hash or nil'
+      end
+
+      if opts['node_json'].nil?
+        opts['node_json'] = {}
+      end
+
+      opts['node_json'].merge!({
+        'role' => opts['chef_role'],
+        'env' => opts['chef_environment'], # deprecated, use `node.chef_environment` in recipes instead
+        'branch' => opts['git_branch'],
+      })
+
+      opts['node_json'] = JSON.generate(opts['node_json'])
 
       # generate user data script to bootstrap instance, include in launch
       # options UNLESS we have manually set the user-data (ie. for ec2admin)

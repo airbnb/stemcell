@@ -31,6 +31,7 @@ chef_dir=/etc/chef
 repo_dir=${chef_dir}/src
 keyfile=${chef_dir}/git_key
 envfile=${chef_dir}/environment
+jsonfile=${chef_dir}/nodejson
 launchedbyfile=${chef_dir}/launched_by
 rolefile=${chef_dir}/role
 branchfile=${chef_dir}/branch
@@ -48,6 +49,10 @@ domain_name='<%= opts['instance_domain_name'] %>'
 chef_version='<%= opts['chef_version'] %>'
 username='<%= opts.fetch('user', ENV['USER']) %>'
 encrypted_data_bag_secret_path='<%= opts['chef_data_bag_secret_path'].to_s %>'
+node_json=$(cat <<'EOF'
+<%= opts['node_json'] %>
+EOF
+)
 
 ##
 ## common functions
@@ -158,7 +163,7 @@ update_repo() {
 }
 
 configure_chef() {
-  echo "saving current origin ($origin), branch ($branch), role ($role), and environment ($environment)"
+  echo "saving current origin ($origin), branch ($branch), role ($role), environment ($environment), and node_json ($node_json)"
   echo "$origin" > $originfile
   chmod 644 $originfile
 
@@ -174,6 +179,9 @@ configure_chef() {
   echo "$username" > $launchedbyfile
   chmod 644 $launchedbyfile
 
+  echo "$node_json" > $jsonfile
+  chmod 644 $jsonfile
+
   echo "configuring chef solo..."
   cat<<EOF > ${chef_dir}/solo.rb
 # chef config (https://docs.chef.io/config_rb_client.html)
@@ -182,6 +190,7 @@ repo_dir = "${repo_dir}"
 cookbook_path ["#{repo_dir}/site-cookbooks", "#{repo_dir}/cookbooks"]
 role_path "#{repo_dir}/roles"
 data_bag_path "#{repo_dir}/data_bags"
+environment_path "#{repo_dir}/environments"
 ohai.plugin_path << "#{repo_dir}/ohai_plugins"
 ssl_verify_mode :verify_peer
 log_level :info
@@ -212,6 +221,7 @@ repo="${repo_dir}"
 branch=\`cat ${branchfile}\`
 role=\`cat ${rolefile}\`
 env=\`cat ${envfile}\`
+node_json=\`cat ${jsonfile}\`
 
 cd \${repo}
 
@@ -226,16 +236,15 @@ GIT_SSH=${git_wrapper} git fetch
 git reset --hard origin/\${branch}
 git clean -fdx
 
-json="{\"role\": \"\${role}\", \"env\": \"\${env}\", \"branch\": \"\${branch}\"}"
 json_file=\`mktemp\`
-echo \$json > \$json_file
+echo \$node_json > \$json_file
 trap "{ rm -f '\$json_file' ; }" EXIT
 
-echo "running chef-solo with runlist \$runlist and json \$json (in file \$json_file)"
+echo "running chef-solo with runlist \$runlist and json \$node_json (in file \$json_file)"
 <% if opts['chef_version'].to_f >= 12.11 %>
-chef-solo --legacy-mode -o "\${runlist}" -j \${json_file} "\$@"
+chef-solo --legacy-mode -o "\${runlist}" -j \${json_file} -E \${env} "\$@"
 <% else %>
-chef-solo -o "\${runlist}" -j \${json_file} "\$@"
+chef-solo -o "\${runlist}" -j \${json_file} -E \${env} "\$@"
 <% end %>
 EOF
   chmod 544 $converge

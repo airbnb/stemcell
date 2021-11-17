@@ -1,4 +1,5 @@
-require 'aws-sdk-v1'
+require 'aws-sdk-ec2'
+require 'base64'
 require 'logger'
 require 'erb'
 require 'set'
@@ -90,7 +91,7 @@ module Stemcell
       opts['git_key'] = try_file(opts['git_key'])
       opts['chef_data_bag_secret'] = try_file(opts['chef_data_bag_secret'])
 
-      # generate tags and merge in any that were specefied as inputs
+      # generate tags and merge in any that were specified as inputs
       tags = {
         'Name' => "#{opts['chef_role']}-#{opts['chef_environment']}",
         'Group' => "#{opts['chef_role']}-#{opts['chef_environment']}",
@@ -106,31 +107,40 @@ module Stemcell
         :image_id => opts['image_id'],
         :instance_type => opts['instance_type'],
         :key_name => opts['key_name'],
-        :count => opts['count'],
+        :min_count => opts['count'],
+        :max_count => opts['count'],
       }
 
+
+      # Associate Public IP can only bet set on network_interfaces, and if present
+      # security groups and subnet should be set on the interface. VPC-only.
+      launch_options[:network_interfaces] ||= [{ device_index: 0 }] if @vpc_id
+
       if opts['security_group_ids'] && !opts['security_group_ids'].empty?
-        launch_options[:security_group_ids] = opts['security_group_ids']
+        launch_options[:network_interfaces][0][:groups] = opts['security_group_ids']
       end
 
       if opts['security_groups'] && !opts['security_groups'].empty?
         if @vpc_id
           # convert sg names to sg ids as VPC only accepts ids
           security_group_ids = get_vpc_security_group_ids(@vpc_id, opts['security_groups'])
-          launch_options[:security_group_ids] ||= []
-          launch_options[:security_group_ids].concat(security_group_ids)
+          launch_options[:network_interfaces][0][:groups] ||= []
+          launch_options[:network_interfaces][0][:groups].concat(security_group_ids)
         else
+          # use top level security groups for classic
           launch_options[:security_groups] = opts['security_groups']
         end
       end
 
+      launch_options[:placement] ||= {}
       # specify availability zone (optional)
       if opts['availability_zone']
-        launch_options[:availability_zone] = opts['availability_zone']
+        placement = launch_options[:placement]
+        placement[:availability_zone] = opts['availability_zone']
       end
 
       if opts['subnet']
-        launch_options[:subnet] = opts['subnet']
+        launch_options[:network_interfaces][0][:subnet_id] = opts['subnet']
       end
 
       if opts['private_ip_address']
@@ -138,23 +148,24 @@ module Stemcell
       end
 
       if opts['dedicated_tenancy']
-        launch_options[:dedicated_tenancy] = opts['dedicated_tenancy']
+        launch_options[:placement][:tenancy] = 'dedicated'
       end
 
       if opts['associate_public_ip_address']
-        launch_options[:associate_public_ip_address] = opts['associate_public_ip_address']
+        net = launch_options[:network_interfaces][0]
+        net[:associate_public_ip_address] = opts['associate_public_ip_address']
       end
 
       # specify IAM role (optional)
       if opts['iam_role']
-        launch_options[:iam_instance_profile] = opts['iam_role']
+        launch_options[:iam_instance_profile] = {
+          name: opts['iam_role']
+        }
       end
 
       # specify placement group (optional)
       if opts['placement_group']
-        launch_options[:placement] = {
-          :group_name => opts['placement_group'],
-        }
+        launch_options[:placement][:group_name] = opts['placement_group']
       end
 
       # specify an EBS-optimized instance (optional)
@@ -184,17 +195,18 @@ module Stemcell
 
       # generate user data script to bootstrap instance, include in launch
       # options UNLESS we have manually set the user-data (ie. for ec2admin)
-      launch_options[:user_data] = opts.fetch('user_data', render_template(opts))
+      launch_options[:user_data] = Base64.encode64(opts.fetch('user_data', render_template(opts)))
 
+      # add tags to launch options so we don't need to make a separate CreateTags call
+      launch_options[:tag_specifications] = [{
+        resource_type: 'instance',
+        tags: tags.map { |k, v| { key: k, value: v } }
+      }]
       # launch instances
       instances = do_launch(launch_options)
 
       # everything from here on out must succeed, or we kill the instances we just launched
       begin
-        # set tags on all instances launched
-        set_tags(instances, tags)
-        @log.info "sent ec2 api tag requests successfully"
-
         # link to classiclink
         unless @vpc_id
           set_classic_link(instances, opts['classic_link'])
@@ -232,14 +244,14 @@ module Stemcell
 
       errors = run_batch_operation(instances) do |instance|
         begin
-          @log.warn "Terminating instance #{instance.id}"
-          instance.terminate
+          @log.warn "Terminating instance #{instance.instance_id}"
+          ec2.terminate_instances(instance_ids: [instance.instance_id])
           nil # nil == success
-        rescue AWS::EC2::Errors::InvalidInstanceID::NotFound => e
+        rescue Aws::EC2::Errors::InvalidInstanceIDNotFound => e
           opts[:ignore_not_found] ? nil : e
         end
       end
-      check_errors(:kill, instances.map(&:id), errors)
+      check_errors(:kill, instances.map(&:instance_id), errors)
     end
 
     # this is made public for ec2admin usage
@@ -249,7 +261,7 @@ module Stemcell
       erb_template = ERB.new(template_file)
       last_bootstrap_line = LAST_BOOTSTRAP_LINE
       generated_template = erb_template.result(binding)
-      @log.debug "genereated template is #{generated_template}"
+      @log.debug "generated template is #{generated_template}"
       return generated_template
     end
 
@@ -271,8 +283,12 @@ module Stemcell
                 "instance(s): (#{instances.inspect})"
 
       times_out_at = Time.now + MAX_RUNNING_STATE_WAIT_TIME
-      until instances.all?{ |i| i.status == :running }
-        wait_time_expire_or_sleep(times_out_at)
+      instance_ids = instances.map(&:instance_id)
+      ec2.describe_instance_status(instance_ids: instance_ids).each do |resp|
+        statuses = resp.instance_statuses.map { |s| s.instance_state.name }
+        until statuses.all? { |s| s == 'running' }
+          wait_time_expire_or_sleep(times_out_at)
+        end
       end
 
       @log.info "all instances in running state"
@@ -291,35 +307,22 @@ module Stemcell
     def do_launch(opts={})
       @log.debug "about to launch instance(s) with options #{opts}"
       @log.info "launching instances"
-      instances = ec2.instances.create(opts)
-      instances = [instances] unless Array === instances
+      instances = ec2.run_instances(opts).instances
       instances.each do |instance|
         @log.info "launched instance #{instance.instance_id}"
       end
       return instances
     end
 
-    def set_tags(instances=[], tags)
-      @log.info "setting tags on instance(s)"
-      errors = run_batch_operation(instances) do |instance|
-        begin
-          instance.tags.set(tags)
-          nil # nil == success
-        rescue AWS::EC2::Errors::InvalidInstanceID::NotFound => e
-          e
-        end
-      end
-      check_errors(:set_tags, instances.map(&:id), errors)
-    end
-
     # Resolve security group names to their ids in the given VPC
     def get_vpc_security_group_ids(vpc_id, group_names)
       group_map = {}
       @log.info "resolving security groups #{group_names} in #{vpc_id}"
-      vpc = AWS::EC2::VPC.new(vpc_id)
-      vpc.security_groups.each do |sg|
-        next if sg.vpc_id != vpc_id
-        group_map[sg.name] = sg.group_id
+      ec2.describe_security_groups(filters: [{ name: 'vpc-id', values: [vpc_id] }]).
+        each do |response|
+        response.security_groups.each do |sg|
+          group_map[sg.group_name] = sg.group_id
+        end
       end
       group_ids = []
       group_names.each do |sg_name|
@@ -352,33 +355,36 @@ module Stemcell
 
         # we can only apply classic link when instances are in the running state
         # lets apply classiclink as instances become available so we don't wait longer than necessary
-        recently_running = left_to_process.select{ |inst| inst.status == :running }
-        left_to_process = left_to_process.reject{ |inst| recently_running.include?(inst) }
+        ec2.describe_instance_status(instance_ids: left_to_process.map { |i| i.instance_id }).each do |resp|
+          statuses = resp.instance_statuses.map { |s| { s.instance_id => s.instance_state.name } }.reduce({}, :merge)
+          recently_running = left_to_process.select { |i| statuses[i.instance_id] == 'running' }
+          left_to_process = left_to_process.reject{ |i| recently_running.include?(i) }
 
-        processed += recently_running
-        errors += run_batch_operation(recently_running) do |instance|
-          begin
-            result = ec2.client.attach_classic_link_vpc({
-                :instance_id => instance.id,
-                :vpc_id => classic_link['vpc_id'],
-                :groups => security_group_ids,
-              })
-            result.error
-          rescue StandardError => e
-            e
+          processed += recently_running
+          errors += run_batch_operation(recently_running) do |instance|
+            begin
+              result = ec2.attach_classic_link_vpc({
+                  :instance_id => instance.instance_id,
+                  :vpc_id => classic_link['vpc_id'],
+                  :groups => security_group_ids,
+                })
+              result.error
+            rescue StandardError => e
+              e
+            end
           end
         end
       end
 
-      check_errors(:set_classic_link, processed.map(&:id), errors)
+      check_errors(:set_classic_link, processed.map(&:instance_id), errors)
     end
 
     def enable_termination_protection(instances)
       @log.info "enabling termination protection on instance(s)"
       errors = run_batch_operation(instances) do |instance|
         begin
-          resp = ec2.client.modify_instance_attribute({
-              :instance_id => instance.id,
+          resp = ec2.modify_instance_attribute({
+              :instance_id => instance.instance_id,
               :disable_api_termination => {
                 :value => true
               }
@@ -388,7 +394,7 @@ module Stemcell
           e
         end
       end
-      check_errors(:enable_termination_protection, instances.map(&:id), errors)
+      check_errors(:enable_termination_protection, instances.map(&:instance_id), errors)
     end
 
     # attempt to accept keys as file paths
@@ -432,21 +438,13 @@ module Stemcell
     end
 
     def ec2
-      return @ec2 if @ec2
-
-      if @vpc_id
-        @ec2 = AWS::EC2::VPC.new(@vpc_id)
-      else
-        @ec2 = AWS::EC2.new
-      end
-
-      @ec2
+      @ec2 ||= Aws::EC2::Client.new
     end
 
     def wait_time_expire_or_sleep(times_out_at)
       now = Time.now
       if now >= times_out_at
-        raise TimeoutError, "exceded timeout of #{MAX_RUNNING_STATE_WAIT_TIME} seconds"
+        raise TimeoutError, "exceeded timeout of #{MAX_RUNNING_STATE_WAIT_TIME} seconds"
       else
         sleep [RUNNING_STATE_WAIT_SLEEP_TIME, times_out_at - now].min
       end
@@ -456,7 +454,7 @@ module Stemcell
       # configure AWS with creds/region
       aws_configs = {:region => @region}
       aws_configs.merge!({
-        :ec2_endpoint      => @ec2_endpoint
+        :endpoint      => @ec2_endpoint
       }) if @ec2_endpoint
       aws_configs.merge!({
         :access_key_id     => @aws_access_key,
@@ -465,7 +463,7 @@ module Stemcell
       aws_configs.merge!({
         :session_token     => @aws_session_token,
       }) if @aws_session_token
-      AWS.config(aws_configs)
+      Aws.config.update(aws_configs)
     end
   end
 end

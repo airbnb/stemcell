@@ -17,8 +17,11 @@ Gem::Specification.new do |s|
   s.test_files    = s.files.grep(%r{^(test|spec|features)/})
   s.require_paths = ["lib"]
 
-  s.add_runtime_dependency 'aws-sdk-v1', '~> 1.63'
-  s.add_runtime_dependency 'net-ssh',    '~> 2.9'
+  # pins several aws sdk transitive dependencies to maintain compatibility with Ruby < 2.3
+  s.add_runtime_dependency 'aws-eventstream', '~> 1.1.1'
+  s.add_runtime_dependency 'aws-sdk-ec2',     '~> 1'
+  s.add_runtime_dependency 'aws-sigv4',       '~> 1.2.4'
+  s.add_runtime_dependency 'net-ssh',         '~> 2.9'
   if RUBY_VERSION >= '2.0'
     s.add_runtime_dependency 'chef',     '>= 11.4.0'
   else

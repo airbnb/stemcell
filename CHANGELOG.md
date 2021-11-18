@@ -1,3 +1,6 @@
+# 0.13.0
+- Migrated AWS SDK to v3
+
 # 0.12.2
 - Support for using a custom EC2 endpoint
 

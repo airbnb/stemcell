@@ -244,8 +244,11 @@ describe Stemcell::Launcher do
     end
 
     it 'can return a client with custom endpoint' do
-      launcher = Stemcell::Launcher.new({'region' => 'region1', 'ec2_endpoint' => 'https://endpoint1'})
-      allow(launcher).to receive(:ec2).and_return(ec2)
+      launcher = Stemcell::Launcher.new({
+        'region' => 'region1',
+        'ec2_endpoint' => 'https://endpoint1',
+        'stub_responses' => true
+      })
       client =  launcher.send(:ec2)
       expect(client.config[:endpoint].to_s).to be_eql('https://endpoint1')
     end

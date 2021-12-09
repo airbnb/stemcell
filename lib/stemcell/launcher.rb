@@ -115,33 +115,31 @@ module Stemcell
 
       # Associate Public IP can only bet set on network_interfaces, and if present
       # security groups and subnet should be set on the interface. VPC-only.
-      launch_options[:network_interfaces] ||= [{ device_index: 0 }] if @vpc_id
+      # Primary network interface
+      network_interface = {
+        device_index: 0,
+      }
+      launch_options[:network_interfaces] = [network_interface]
 
       if opts['security_group_ids'] && !opts['security_group_ids'].empty?
-        launch_options[:network_interfaces][0][:groups] = opts['security_group_ids']
+        network_interface[:groups] = opts['security_group_ids']
       end
 
       if opts['security_groups'] && !opts['security_groups'].empty?
-        if @vpc_id
-          # convert sg names to sg ids as VPC only accepts ids
-          security_group_ids = get_vpc_security_group_ids(@vpc_id, opts['security_groups'])
-          launch_options[:network_interfaces][0][:groups] ||= []
-          launch_options[:network_interfaces][0][:groups].concat(security_group_ids)
-        else
-          # use top level security groups for classic
-          launch_options[:security_groups] = opts['security_groups']
-        end
+        # convert sg names to sg ids as VPC only accepts ids
+        security_group_ids = get_vpc_security_group_ids(@vpc_id, opts['security_groups'])
+        network_interface[:groups] ||= []
+        network_interface[:groups].concat(security_group_ids)
       end
 
-      launch_options[:placement] ||= {}
+      launch_options[:placement] = placement = {}
       # specify availability zone (optional)
       if opts['availability_zone']
-        placement = launch_options[:placement]
         placement[:availability_zone] = opts['availability_zone']
       end
 
       if opts['subnet']
-        launch_options[:network_interfaces][0][:subnet_id] = opts['subnet']
+        network_interface[:subnet_id] = opts['subnet']
       end
 
       if opts['private_ip_address']
@@ -149,12 +147,11 @@ module Stemcell
       end
 
       if opts['dedicated_tenancy']
-        launch_options[:placement][:tenancy] = 'dedicated'
+        placement[:tenancy] = 'dedicated'
       end
 
       if opts['associate_public_ip_address']
-        net = launch_options[:network_interfaces][0]
-        net[:associate_public_ip_address] = opts['associate_public_ip_address']
+        network_interface[:associate_public_ip_address] = opts['associate_public_ip_address']
       end
 
       # specify IAM role (optional)
@@ -166,7 +163,7 @@ module Stemcell
 
       # specify placement group (optional)
       if opts['placement_group']
-        launch_options[:placement][:group_name] = opts['placement_group']
+        placement[:group_name] = opts['placement_group']
       end
 
       # specify an EBS-optimized instance (optional)

@@ -97,24 +97,6 @@ module Stemcell
         :env   => 'VPC_ID'
       },
       {
-        :name  => 'classic_link_vpc_id',
-        :desc  => 'VPC ID to which this instance will be classic-linked',
-        :type  => String,
-        :env   => 'CLASSIC_LINK_VPC_ID',
-      },
-      {
-        :name  => 'classic_link_security_group_ids',
-        :desc  => 'comma-separated list of security group IDs to link into ClassicLink; not used unless classic_link_vpc_id is set',
-        :type  => String,
-        :env   => 'CLASSIC_LINK_SECURITY_GROUP_IDS',
-      },
-      {
-        :name  => 'classic_link_security_groups',
-        :desc  => 'comma-separated list of security groups to link into ClassicLink; not used unless classic_link_vpc_id is set',
-        :type  => String,
-        :env   => 'CLASSIC_LINK_SECURITY_GROUPS',
-      },
-      {
         :name  => 'subnet',
         :desc  => "VPC subnet for which to launch this instance",
         :type  => String,
@@ -429,17 +411,6 @@ module Stemcell
       options['ephemeral_devices'] &&= options['ephemeral_devices'].split(',')
       # convert chef_cookbook_attributes from comma separated string to ruby array
       options['chef_cookbook_attributes'] &&= options['chef_cookbook_attributes'].split(',')
-
-      # format the classic link options
-      if options['classic_link_vpc_id']
-        options['classic_link']['vpc_id'] = options['classic_link_vpc_id']
-      end
-      if options['classic_link_security_group_ids']
-        options['classic_link']['security_group_ids'] = options['classic_link_security_group_ids'].split(',')
-      end
-      if options['classic_link_security_groups']
-        options['classic_link']['security_groups'] = options['classic_link_security_groups'].split(',')
-      end
 
       options
     end

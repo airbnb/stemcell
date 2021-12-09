@@ -84,77 +84,7 @@ describe Stemcell::Launcher do
           ],
           :user_data          => Base64.encode64('template')
         )).and_return(instances)
-      # set_classic_link should not be set on vpc hosts.
-      expect(launcher).not_to receive(:set_classic_link)
-
       launcher.send(:launch, launch_options)
-    end
-
-    it 'calls set_classic_link for non vpc instances' do
-      launcher = Stemcell::Launcher.new({'region' => 'region', 'vpc_id' => false})
-      expect(launcher).to receive(:set_classic_link)
-      expect(launcher).to receive(:do_launch).and_return(instances)
-      launcher.send(:launch, launch_options)
-    end
-  end
-
-  describe '#set_classic_link' do
-    let(:ec2) do
-      ec2 = Aws::EC2::Client.new(stub_responses: true)
-      ec2.stub_responses(
-        :describe_security_groups,
-        {
-          security_groups: [{group_id: 'sg-3', group_name: 'sg_name', vpc_id:'vpc-1'}],
-        }
-      )
-      ec2.stub_responses(:attach_classic_link_vpc, {})
-      ec2.stub_responses(:describe_instance_status,
-        {
-          instance_statuses: [
-            (1..2).map { |id| { instance_id: id.to_s, instance_state: { name: 'running' }}},
-            (3..4).map { |id| { instance_id: id.to_s, instance_state: { name: 'pending' }}},
-          ].flatten
-        },
-        {
-          instance_statuses: (3..4).map { |id| { instance_id: id.to_s, instance_state: { name: 'running' }}}
-        }
-      )
-      ec2
-    end
-    let(:response) { instance_double(Seahorse::Client::Response) }
-    before do
-      allow(launcher).to receive(:ec2).and_return(ec2)
-      allow(response).to receive(:error).and_return(nil)
-    end
-
-    let(:classic_link) {
-      {
-        'vpc_id' => 'vpc-1',
-        'security_group_ids' => ['sg-1', 'sg-2'],
-        'security_groups' => ['sg_name']
-      }
-    }
-
-    it 'invokes classic link on all of the instances' do
-      expect(launcher).to receive(:get_vpc_security_group_ids).with('vpc-1', ['sg_name']).
-        and_call_original
-      expect(ec2).to receive(:describe_security_groups).and_call_original
-      instances.each do |instance|
-        expect(ec2).to receive(:attach_classic_link_vpc).ordered.with(a_hash_including(
-            :instance_id => instance.instance_id,
-            :vpc_id => classic_link['vpc_id'],
-            :groups => ['sg-1', 'sg-2', 'sg-3'],
-          )).and_return(response).and_call_original
-      end
-
-      launcher.send(:set_classic_link, instances, classic_link)
-
-      expect(ec2.api_requests.size).to eq(7)
-      expect(ec2.api_requests.last[:params]).to eq({
-       :instance_id => instances.last.instance_id,
-       :vpc_id => classic_link['vpc_id'],
-       :groups => ['sg-1', 'sg-2', 'sg-3']
-     })
     end
   end
 

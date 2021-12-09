@@ -49,7 +49,6 @@ module Stemcell
       'security_groups',
       'security_group_ids',
       'tags',
-      'classic_link',
       'iam_role',
       'ebs_optimized',
       'termination_protection',
@@ -191,6 +190,10 @@ module Stemcell
         end
       end
 
+      if opts['termination_protection']
+        launch_options[:disable_api_termination] = true
+      end
+
       # generate user data script to bootstrap instance, include in launch
       # options UNLESS we have manually set the user-data (ie. for ec2admin)
       launch_options[:user_data] = Base64.encode64(opts.fetch('user_data', render_template(opts)))
@@ -200,24 +203,12 @@ module Stemcell
         resource_type: 'instance',
         tags: tags.map { |k, v| { key: k, value: v } }
       }]
+
       # launch instances
       instances = do_launch(launch_options)
 
       # everything from here on out must succeed, or we kill the instances we just launched
       begin
-        # link to classiclink
-        unless @vpc_id
-          set_classic_link(instances, opts['classic_link'])
-          @log.info "successfully applied classic link settings (if any)"
-        end
-
-        # turn on termination protection
-        # we do this now to make sure all other settings worked
-        if opts['termination_protection']
-          enable_termination_protection(instances)
-          @log.info "successfully enabled termination protection"
-        end
-
         # wait for aws to report instance stats
         if opts.fetch('wait', true)
           wait(instances)
@@ -328,71 +319,6 @@ module Stemcell
         group_ids << group_map[sg_name]
       end
       group_ids
-    end
-
-    def set_classic_link(left_to_process, classic_link)
-      return unless classic_link
-      return unless classic_link['vpc_id']
-
-      security_group_ids = classic_link['security_group_ids'] || []
-      security_group_names = classic_link['security_groups'] || []
-      return if security_group_ids.empty? && security_group_names.empty?
-
-      if !security_group_names.empty?
-        extra_group_ids = get_vpc_security_group_ids(classic_link['vpc_id'], security_group_names)
-        security_group_ids = security_group_ids + extra_group_ids
-      end
-
-      @log.info "applying classic link settings on #{left_to_process.count} instance(s)"
-
-      errors = []
-      processed = []
-      times_out_at = Time.now + MAX_RUNNING_STATE_WAIT_TIME
-      until left_to_process.empty?
-        wait_time_expire_or_sleep(times_out_at)
-
-        # we can only apply classic link when instances are in the running state
-        # lets apply classiclink as instances become available so we don't wait longer than necessary
-        ec2.describe_instance_status(instance_ids: left_to_process.map { |i| i.instance_id }).each do |resp|
-          statuses = resp.instance_statuses.map { |s| { s.instance_id => s.instance_state.name } }.reduce({}, :merge)
-          recently_running = left_to_process.select { |i| statuses[i.instance_id] == 'running' }
-          left_to_process = left_to_process.reject{ |i| recently_running.include?(i) }
-
-          processed += recently_running
-          errors += run_batch_operation(recently_running) do |instance|
-            begin
-              result = ec2.attach_classic_link_vpc({
-                  :instance_id => instance.instance_id,
-                  :vpc_id => classic_link['vpc_id'],
-                  :groups => security_group_ids,
-                })
-              result.error
-            rescue StandardError => e
-              e
-            end
-          end
-        end
-      end
-
-      check_errors(:set_classic_link, processed.map(&:instance_id), errors)
-    end
-
-    def enable_termination_protection(instances)
-      @log.info "enabling termination protection on instance(s)"
-      errors = run_batch_operation(instances) do |instance|
-        begin
-          resp = ec2.modify_instance_attribute({
-              :instance_id => instance.instance_id,
-              :disable_api_termination => {
-                :value => true
-              }
-            })
-          resp.error  # returns nil (success) unless there was an error
-        rescue StandardError => e
-          e
-        end
-      end
-      check_errors(:enable_termination_protection, instances.map(&:instance_id), errors)
     end
 
     # attempt to accept keys as file paths

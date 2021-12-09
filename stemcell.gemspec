@@ -20,8 +20,6 @@ Gem::Specification.new do |s|
   # pins several aws sdk transitive dependencies to maintain compatibility with Ruby < 2.3
   s.add_runtime_dependency 'aws-eventstream', '~> 1.1.1'
   s.add_runtime_dependency 'aws-sdk-ec2',     '~> 1'
-  # keep sdk v1 as necrosis script is not yet migrated
-  s.add_runtime_dependency 'aws-sdk-v1',      '~> 1.63'
   s.add_runtime_dependency 'aws-sigv4',       '~> 1.2.4'
   s.add_runtime_dependency 'net-ssh',         '~> 2.9'
   if RUBY_VERSION >= '2.0'

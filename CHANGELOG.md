@@ -1,5 +1,7 @@
 # 0.13.0
-- Migrated AWS SDK to v3
+- Migrate to AWS SDK to v3
+- Drop support for ClassicLink
+- Add aws_session_token to `necrosis` script to support STS credentials
 
 # 0.12.2
 - Support for using a custom EC2 endpoint

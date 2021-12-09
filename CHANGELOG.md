@@ -1,3 +1,6 @@
+# 0.13.1
+- Support for specifying --cpu-options
+
 # 0.13.0
 - Migrate to AWS SDK to v3
 - Drop support for ClassicLink

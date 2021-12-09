@@ -188,6 +188,12 @@ module Stemcell
         :env   => 'CHEF_DATA_BAG_SECRET_PATH'
       },
       {
+        :name => 'cpu_options',
+        :desc => "cpu options",
+        :type => String,
+        :env => 'CPU_OPTIONS'
+      },
+      {
         :name => 'chef_role',
         :desc => "chef role of instance to be launched",
         :type => String,
@@ -343,6 +349,16 @@ module Stemcell
           tags[key] = value
         end
         options['tags'] = tags
+      end
+
+      # convert cpu_options from comma separated string to ruby hash
+      if options['cpu_options']
+        cpu_options = {}
+        options['cpu_options'].split(',').each do |cpu_opt|
+          key, value = cpu_opt.split('=')
+          cpu_options[key] = value
+        end
+        options['cpu_options'] = cpu_options
       end
 
       # parse block_device_mappings to convert it from the standard CLI format

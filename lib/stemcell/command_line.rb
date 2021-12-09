@@ -132,6 +132,7 @@ module Stemcell
       # comma-separated list when presented as defaults.
       pd['security_groups'] &&= pd['security_groups'].join(',')
       pd['tags'] &&= pd['tags'].to_a.map { |p| p.join('=') }.join(',')
+      pd['cpu_options'] &&= pd['cpu_options'].to_a.map { |p| p.join('=') }.join(',')
       pd['chef_cookbook_attributes'] &&= pd['chef_cookbook_attributes'].join(',')
     end
 

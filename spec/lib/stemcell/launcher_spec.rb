@@ -8,7 +8,15 @@ describe Stemcell::Launcher do
     launcher
   }
   let(:operation) { 'op' }
-  let(:instances) { (1..4).map { |id| Aws::EC2::Types::Instance.new(instance_id: id.to_s) } }
+  let(:instances) do
+    (1..4).map do |id|
+      Aws::EC2::Types::Instance.new(
+        instance_id: id.to_s,
+        private_ip_address: "10.10.10.#{id}",
+        state: Aws::EC2::Types::InstanceState.new(name: 'pending')
+      )
+    end
+  end
   let(:instance_ids) { instances.map(&:id) }
 
   describe '#launch' do
@@ -16,16 +24,27 @@ describe Stemcell::Launcher do
       ec2 = Aws::EC2::Client.new(stub_responses: true)
       ec2.stub_responses(
         :describe_security_groups,
-        {
-          security_groups: [
-            {group_id: 'sg-1', group_name: 'sg_name1', vpc_id:'vpc-1'},
-            {group_id: 'sg-2', group_name: 'sg_name2', vpc_id:'vpc-1'},
-          ],
-        }
+        security_groups: [
+          {group_id: 'sg-1', group_name: 'sg_name1', vpc_id:'vpc-1'},
+          {group_id: 'sg-2', group_name: 'sg_name2', vpc_id:'vpc-1'},
+        ],
+      )
+      ec2.stub_responses(
+        :describe_instances,
+        reservations: [{
+          instances: (1..4).map do |id|
+            { instance_id: id.to_s,
+              private_ip_address: "10.10.10.#{id}",
+              public_ip_address: "24.10.10.#{id}",
+              state: {
+                name: 'running'
+              }}
+          end
+        }]
       )
       ec2
     end
-    let(:response) { instance_double(Seahorse::Client::Response ) }
+    let(:response) { instance_double(Seahorse::Client::Response) }
     let(:launcher) {
       opts = {'region' => 'region', 'vpc_id' => 'vpc-1'}
       launcher = Stemcell::Launcher.new(opts)
@@ -46,7 +65,7 @@ describe Stemcell::Launcher do
         'count'                   => 2,
         'security_groups'         => ['sg_name1', 'sg_name2'],
         'user'                    => 'some_user',
-        'wait'                    => false
+        'wait'                    => true
       }
     }
 
@@ -84,7 +103,8 @@ describe Stemcell::Launcher do
           ],
           :user_data          => Base64.encode64('template')
         )).and_return(instances)
-      launcher.send(:launch, launch_options)
+      launched_instances = launcher.send(:launch, launch_options)
+      expect(launched_instances.map(&:public_ip_address)).to all(be_truthy)
     end
   end
 

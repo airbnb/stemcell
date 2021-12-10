@@ -211,7 +211,17 @@ module Stemcell
       begin
         # wait for aws to report instance stats
         if opts.fetch('wait', true)
-          wait(instances)
+          @log.info "Waiting up to #{MAX_RUNNING_STATE_WAIT_TIME} seconds for #{instances.count} " \
+                "instance(s): (#{instances.map(&:instance_id)})"
+          r = ec2.wait_until(:instance_running, instance_ids: instances.map(&:instance_id)) do |w|
+            # wait up to 5 minutes with 5 seconds in between
+            # sdk default for this waiter is 15 seconds 40 times.
+            w.max_attempts = MAX_RUNNING_STATE_WAIT_TIME / RUNNING_STATE_WAIT_SLEEP_TIME
+            w.delay = RUNNING_STATE_WAIT_SLEEP_TIME
+          end
+          # now that the instances are running we should have attributes not
+          # available in 'pending' state
+          instances = r.map { |page| page.reservations.map(&:instances) }.flatten
           print_run_info(instances)
           @log.info "launched instances successfully"
         end
@@ -265,22 +275,6 @@ module Stemcell
         puts
       end
       puts "install logs will be in /var/log/init and /var/log/init.err"
-    end
-
-    def wait(instances)
-      @log.info "Waiting up to #{MAX_RUNNING_STATE_WAIT_TIME} seconds for #{instances.count} " \
-                "instance(s): (#{instances.inspect})"
-
-      times_out_at = Time.now + MAX_RUNNING_STATE_WAIT_TIME
-      instance_ids = instances.map(&:instance_id)
-      ec2.describe_instance_status(instance_ids: instance_ids).each do |resp|
-        statuses = resp.instance_statuses.map { |s| s.instance_state.name }
-        until statuses.all? { |s| s == 'running' }
-          wait_time_expire_or_sleep(times_out_at)
-        end
-      end
-
-      @log.info "all instances in running state"
     end
 
     def verify_required_options(params, required_options)
@@ -363,15 +357,6 @@ module Stemcell
 
     def ec2
       @ec2 ||= Aws::EC2::Client.new(@ec2_opts)
-    end
-
-    def wait_time_expire_or_sleep(times_out_at)
-      now = Time.now
-      if now >= times_out_at
-        raise TimeoutError, "exceeded timeout of #{MAX_RUNNING_STATE_WAIT_TIME} seconds"
-      else
-        sleep [RUNNING_STATE_WAIT_SLEEP_TIME, times_out_at - now].min
-      end
     end
 
     def configure_aws_creds_and_region

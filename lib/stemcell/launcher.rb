@@ -211,17 +211,10 @@ module Stemcell
       begin
         # wait for aws to report instance stats
         if opts.fetch('wait', true)
+          instance_ids = instances.map(&:instance_id)
           @log.info "Waiting up to #{MAX_RUNNING_STATE_WAIT_TIME} seconds for #{instances.count} " \
-                "instance(s): (#{instances.map(&:instance_id)})"
-          r = ec2.wait_until(:instance_running, instance_ids: instances.map(&:instance_id)) do |w|
-            # wait up to 5 minutes with 5 seconds in between
-            # sdk default for this waiter is 15 seconds 40 times.
-            w.max_attempts = MAX_RUNNING_STATE_WAIT_TIME / RUNNING_STATE_WAIT_SLEEP_TIME
-            w.delay = RUNNING_STATE_WAIT_SLEEP_TIME
-          end
-          # now that the instances are running we should have attributes not
-          # available in 'pending' state
-          instances = r.map { |page| page.reservations.map(&:instances) }.flatten
+                "instance(s): (#{instance_ids})"
+          instances = wait(instance_ids)
           print_run_info(instances)
           @log.info "launched instances successfully"
         end
@@ -275,6 +268,18 @@ module Stemcell
         puts
       end
       puts "install logs will be in /var/log/init and /var/log/init.err"
+    end
+
+    def wait(instance_ids)
+      started_at = Time.now
+      result = ec2.wait_until(:instance_running, instance_ids: instance_ids) do |w|
+        w.max_attempts = nil
+        w.delay = RUNNING_STATE_WAIT_SLEEP_TIME
+        w.before_wait do |attempts, response|
+          throw :failure if Time.now - started_at > MAX_RUNNING_STATE_WAIT_TIME
+        end
+      end
+      result.map { |page| page.reservations.map(&:instances) }.flatten
     end
 
     def verify_required_options(params, required_options)

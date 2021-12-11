@@ -9,9 +9,9 @@ describe Stemcell::Launcher do
   }
   let(:operation) { 'op' }
   let(:instances) do
-    (1..4).map do |id|
+    ('1'..'4').map do |id|
       Aws::EC2::Types::Instance.new(
-        instance_id: id.to_s,
+        instance_id: id,
         private_ip_address: "10.10.10.#{id}",
         state: Aws::EC2::Types::InstanceState.new(name: 'pending')
       )
@@ -32,8 +32,8 @@ describe Stemcell::Launcher do
       ec2.stub_responses(
         :describe_instances,
         reservations: [{
-          instances: (1..4).map do |id|
-            { instance_id: id.to_s,
+          instances: ('1'..'4').map do |id|
+            { instance_id: id,
               private_ip_address: "10.10.10.#{id}",
               public_ip_address: "24.10.10.#{id}",
               state: {
@@ -108,14 +108,14 @@ describe Stemcell::Launcher do
     end
   end
 
-  describe '#run_batch_operation' do
+  describe '#kill' do
     let(:ec2) do
       ec2 = Aws::EC2::Client.new(stub_responses: true)
       ec2.stub_responses(
         :terminate_instances, -> (context) {
-        instance_id = context.params[:instance_ids].first # we terminate one at a time
-        if instance_id >= '3'
-          Aws::EC2::Errors::InvalidInstanceIDNotFound.new("test", "test")
+        instance_ids = context.params[:instance_ids]
+        if instance_ids.include? 'i-3'
+          Aws::EC2::Errors::InvalidInstanceIDNotFound.new(nil, "The instance ID 'i-3' do not exist")
         else
           {} # success
         end
@@ -123,52 +123,26 @@ describe Stemcell::Launcher do
       ec2
     end
 
-    it "raises no exception when no internal error occur" do
-      errors = launcher.send(:run_batch_operation, instances) {}
-      expect(errors.all?(&:nil?)).to be true
-    end
+    let(:instance_ids) { ('i-1'..'i-4').to_a }
 
-    it "runs full batch even when there are two error" do
-      errors = launcher.send(:run_batch_operation,
-                             instances) do |instance, error|
-        raise "error-#{instance.instance_id}" if instance.instance_id.to_i % 2 == 0
-      end
-      expect(errors.count(&:nil?)).to be_eql(2)
-      expect(errors.reject(&:nil?).map { |e| e.message }).to \
-        be_eql([2, 4].map { |id| "error-#{id}" })
-    end
-
-    it "retries after an intermittent error" do
-      count = 0
-      errors = launcher.send(:run_batch_operation,
-                             instances)  do |instance|
-        if instance.instance_id == 3
-          count += 1
-          count < 3 ?
-            Aws::EC2::Errors::InvalidInstanceIDNotFound.new("error-#{instance.instance_id}"):
-            nil
-        end
-      end
-      expect(errors.all?(&:nil?)).to be true
-    end
-
-    it "retries up to max_attempts option per instance" do
-      max_attempts = 6
-      opts = {'region' => 'region', 'max_attempts' => max_attempts}
-      launcher = Stemcell::Launcher.new(opts)
-      allow(launcher).to receive(:sleep).and_return(0)
-      instances = (3..4).map do |id|
-        Aws::EC2::Types::Instance.new(instance_id: id.to_s)
-      end
+    before do
       allow(launcher).to receive(:ec2).and_return(ec2)
-      instances.each do |instance|
-        expect(ec2).to receive(:terminate_instances).with(instance_ids: [instance.instance_id]).exactly(6).times.
-          and_raise(Aws::EC2::Errors::InvalidInstanceIDNotFound.new('test', 'test')).and_call_original
+    end
+
+    context 'when ignore_not_found is true' do
+      it 'terminates valid instances even if an invalid instance id is provided' do
+        launcher.kill(instance_ids, ignore_not_found: true)
       end
 
-      expect do
-        launcher.send(:kill, instances)
-      end.to raise_error(Stemcell::IncompleteOperation)
+      it 'finishes without error even if no instance ids are valid' do
+        launcher.kill(['i-3'], ignore_not_found: true)
+      end
+    end
+
+    context 'when ignore_not_found is false' do
+      it 'raises an error' do
+        expect { launcher.kill(instance_ids) }.to raise_error(Aws::EC2::Errors::InvalidInstanceIDNotFound)
+      end
     end
   end
 

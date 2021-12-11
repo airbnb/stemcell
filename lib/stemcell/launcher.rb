@@ -231,19 +231,18 @@ module Stemcell
       return instances
     end
 
-    def kill(instances, opts={})
-      return if !instances || instances.empty?
+    def kill(instance_ids, opts={})
+      return if !instance_ids || instance_ids.empty?
 
-      errors = run_batch_operation(instances) do |instance|
-        begin
-          @log.warn "Terminating instance #{instance.instance_id}"
-          ec2.terminate_instances(instance_ids: [instance.instance_id])
-          nil # nil == success
-        rescue Aws::EC2::Errors::InvalidInstanceIDNotFound => e
-          opts[:ignore_not_found] ? nil : e
-        end
-      end
-      check_errors(:kill, instances.map(&:instance_id), errors)
+      @log.warn "Terminating instances #{instance_ids}"
+      ec2.terminate_instances(instance_ids: instance_ids)
+      nil # nil == success
+    rescue Aws::EC2::Errors::InvalidInstanceIDNotFound => e
+      raise unless opts[:ignore_not_found]
+
+      invalid_ids = e.message.scan(/i-[a-z0-9]+/)
+      instance_ids -= invalid_ids
+      retry unless instance_ids.empty? || invalid_ids.empty? # don't retry if we couldn't find any instance ids
     end
 
     # this is made public for ec2admin usage
@@ -323,41 +322,6 @@ module Stemcell
     # attempt to accept keys as file paths
     def try_file(opt="")
         File.read(File.expand_path(opt)) rescue opt
-    end
-
-    INITIAL_RETRY_SEC = 1
-
-    # Return a Hash of instance => error. Empty hash indicates "no error"
-    # for code block:
-    #   - if block returns nil, success
-    #   - if block returns non-nil value (e.g., exception), retry 3 times w/ backoff
-    #   - if block raises exception, fail
-    def run_batch_operation(instances)
-      instances.map do |instance|
-        begin
-          attempt = 0
-          result = nil
-          while attempt < @max_attempts
-            # sleep idempotently except for the first attempt
-            sleep(INITIAL_RETRY_SEC * 2 ** attempt) if attempt != 0
-            result = yield(instance)
-            break if result.nil? # nil indicates success
-            attempt += 1
-          end
-          result # result for this instance is nil or returned exception
-        rescue => e
-          e # result for this instance is caught exception
-        end
-      end
-    end
-
-    def check_errors(operation, instance_ids, errors)
-      return if errors.all?(&:nil?)
-      raise IncompleteOperation.new(
-        operation,
-        instance_ids,
-        instance_ids.zip(errors).reject { |i, e| e.nil? }
-      )
     end
 
     def ec2

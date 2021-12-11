@@ -158,11 +158,9 @@ describe Stemcell::Launcher do
   end
 
   describe '#ec2' do
-    let(:ec2) { Aws::EC2::Client.new(stub_responses: true) }
 
     it 'can return a client with regional endpoint' do
       launcher = Stemcell::Launcher.new({'region' => 'us-east-1', 'ec2_endpoint' => nil})
-      allow(launcher).to receive(:ec2).and_return(ec2)
       client = launcher.send(:ec2)
       expect(client.config[:endpoint].to_s).to be_eql('https://ec2.us-east-1.amazonaws.com')
     end
@@ -171,9 +169,8 @@ describe Stemcell::Launcher do
       launcher = Stemcell::Launcher.new({
         'region' => 'region1',
         'ec2_endpoint' => 'https://endpoint1',
-        'stub_responses' => true
       })
-      client =  launcher.send(:ec2)
+      client = launcher.send(:ec2)
       expect(client.config[:endpoint].to_s).to be_eql('https://endpoint1')
     end
   end

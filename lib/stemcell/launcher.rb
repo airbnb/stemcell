@@ -80,7 +80,6 @@ module Stemcell
       @aws_secret_key = opts['aws_secret_key']
       @aws_session_token = opts['aws_session_token']
       @max_attempts = opts['max_attempts'] || 3
-      @stub_responses = opts['stub_responses'] || false
       configure_aws_creds_and_region
     end
 
@@ -325,13 +324,13 @@ module Stemcell
     end
 
     def ec2
-      @ec2 ||= Aws::EC2::Client.new(@ec2_opts)
+      @ec2 ||= begin
+        opts = @ec2_endpoint ? { endpoint: @ec2_endpoint } : {}
+        Aws::EC2::Client.new(opts)
+      end
     end
 
     def configure_aws_creds_and_region
-      # configure client local opts
-      @ec2_opts = { stub_responses: @stub_responses }
-      @ec2_opts.merge!({ endpoint: @ec2_endpoint }) if @ec2_endpoint
       # configure AWS with creds/region
       aws_configs = {:region => @region}
       aws_configs.merge!({

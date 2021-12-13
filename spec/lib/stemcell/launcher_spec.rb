@@ -2,6 +2,10 @@ require 'spec_helper'
 require 'base64'
 
 describe Stemcell::Launcher do
+  before do
+    Aws.config[:stub_responses] = true
+  end
+
   let(:launcher) {
     opts = {'region' => 'region'}
     launcher = Stemcell::Launcher.new(opts)
@@ -21,7 +25,7 @@ describe Stemcell::Launcher do
 
   describe '#launch' do
     let(:ec2) do
-      ec2 = Aws::EC2::Client.new(stub_responses: true)
+      ec2 = Aws::EC2::Client.new
       ec2.stub_responses(
         :describe_security_groups,
         security_groups: [
@@ -110,7 +114,7 @@ describe Stemcell::Launcher do
 
   describe '#kill' do
     let(:ec2) do
-      ec2 = Aws::EC2::Client.new(stub_responses: true)
+      ec2 = Aws::EC2::Client.new
       ec2.stub_responses(
         :terminate_instances, -> (context) {
         instance_ids = context.params[:instance_ids]

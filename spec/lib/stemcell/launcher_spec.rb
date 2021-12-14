@@ -37,12 +37,14 @@ describe Stemcell::Launcher do
         :describe_instances,
         reservations: [{
           instances: ('1'..'4').map do |id|
-            { instance_id: id,
+            {
+              instance_id: id,
               private_ip_address: "10.10.10.#{id}",
               public_ip_address: "24.10.10.#{id}",
               state: {
                 name: 'running'
-              }}
+              }
+            }
           end
         }]
       )

@@ -77,10 +77,10 @@ $ stemcell $your_chef_role --tail
 
 ### Terminating:
 
-To terminate, use the necrosis command and pass a space separated list of instance ids:
+To terminate, use the AWS CLI and pass a space separated list of instance ids:
 
 ```bash
-$ necrosis i-12345678 i-12345679 i-12345670
+$ aws ec2 terminate-instances --instance-ids i-12345678 i-12345679 i-12345670
 ```
 
 ## Automation ##

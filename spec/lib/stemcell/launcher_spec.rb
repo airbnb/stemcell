@@ -1,45 +1,56 @@
 require 'spec_helper'
-
-class MockInstance
-  def initialize(id)
-    @id = id
-  end
-
-  def id
-    @id
-  end
-
-  def status
-    :running
-  end
-end
-
-class MockSecurityGroup
-  attr_reader :group_id, :name, :vpc_id
-  def initialize(id, name, vpc_id)
-    @group_id = id
-    @name = name
-    @vpc_id = vpc_id
-  end
-end
-
-class MockException < StandardError
-end
+require 'base64'
 
 describe Stemcell::Launcher do
+  before do
+    Aws.config[:stub_responses] = true
+  end
+
   let(:launcher) {
     opts = {'region' => 'region'}
     launcher = Stemcell::Launcher.new(opts)
     launcher
   }
   let(:operation) { 'op' }
-  let(:instances) { (1..4).map { |id| MockInstance.new(id) } }
+  let(:instances) do
+    ('1'..'4').map do |id|
+      Aws::EC2::Types::Instance.new(
+        instance_id: id,
+        private_ip_address: "10.10.10.#{id}",
+        state: Aws::EC2::Types::InstanceState.new(name: 'pending')
+      )
+    end
+  end
   let(:instance_ids) { instances.map(&:id) }
 
   describe '#launch' do
-    let(:ec2) { instance_double(AWS::EC2) }
-    let(:client) { double(AWS::EC2::Client) }
-    let(:response) { instance_double(AWS::Core::Response) }
+    let(:ec2) do
+      ec2 = Aws::EC2::Client.new
+      ec2.stub_responses(
+        :describe_security_groups,
+        security_groups: [
+          {group_id: 'sg-1', group_name: 'sg_name1', vpc_id:'vpc-1'},
+          {group_id: 'sg-2', group_name: 'sg_name2', vpc_id:'vpc-1'},
+        ],
+      )
+      ec2.stub_responses(
+        :describe_instances,
+        reservations: [{
+          instances: ('1'..'4').map do |id|
+            {
+              instance_id: id,
+              private_ip_address: "10.10.10.#{id}",
+              public_ip_address: "24.10.10.#{id}",
+              state: {
+                name: 'running'
+              }
+            }
+          end
+        }]
+      )
+      ec2
+    end
+    let(:response) { instance_double(Seahorse::Client::Response) }
     let(:launcher) {
       opts = {'region' => 'region', 'vpc_id' => 'vpc-1'}
       launcher = Stemcell::Launcher.new(opts)
@@ -59,7 +70,8 @@ describe Stemcell::Launcher do
         'availability_zone'       => 'us-east-1a',
         'count'                   => 2,
         'security_groups'         => ['sg_name1', 'sg_name2'],
-        'wait'                    => false
+        'user'                    => 'some_user',
+        'wait'                    => true
       }
     }
 
@@ -67,146 +79,105 @@ describe Stemcell::Launcher do
       allow(launcher).to receive(:try_file).and_return('secret')
       allow(launcher).to receive(:render_template).and_return('template')
       allow(launcher).to receive(:ec2).and_return(ec2)
-      allow(ec2).to receive(:client).and_return(client)
       allow(response).to receive(:error).and_return(nil)
     end
 
     it 'launches all of the instances' do
       expect(launcher).to receive(:get_vpc_security_group_ids).
         with('vpc-1', ['sg_name1', 'sg_name2']).and_call_original
-      expect_any_instance_of(AWS::EC2::VPC).to receive(:security_groups).
-        and_return([1,2].map { |i| MockSecurityGroup.new("sg-#{i}", "sg_name#{i}", 'vpc-1')})
+      expect(ec2).to receive(:describe_security_groups).and_call_original
       expect(launcher).to receive(:do_launch).with(a_hash_including(
           :image_id           => 'ami-d9d6a6b0',
           :instance_type      => 'c1.xlarge',
           :key_name           => 'key',
-          :count              => 2,
-          :security_group_ids => ['sg-1', 'sg-2'],
-          :availability_zone  => 'us-east-1a',
-          :user_data          => 'template'
+          :min_count          => 2,
+          :max_count          => 2,
+          :placement          => { :availability_zone => 'us-east-1a' },
+          :network_interfaces => [{
+            :device_index => 0,
+            :groups => ['sg-1', 'sg-2' ]
+          }],
+          :tag_specifications => [
+            {
+              :resource_type => 'instance',
+              :tags => [
+                { :key => "Name",       :value => "role-environment" },
+                { :key => "Group",      :value => "role-environment" },
+                { :key => "created_by", :value => "some_user" },
+                { :key => "stemcell",   :value => Stemcell::VERSION },
+              ]},
+          ],
+          :user_data          => Base64.encode64('template')
         )).and_return(instances)
-      expect(launcher).to receive(:set_tags).with(kind_of(Array), kind_of(Hash)).and_return(nil)
-      # set_classic_link should not be set on vpc hosts.
-      expect(launcher).not_to receive(:set_classic_link)
-
-      launcher.send(:launch, launch_options)
-    end
-
-    it 'calls set_classic_link for non vpc instances' do
-      launcher = Stemcell::Launcher.new({'region' => 'region', 'vpc_id' => false})
-      expect(launcher).to receive(:set_classic_link)
-      expect(launcher).to receive(:set_tags).with(kind_of(Array), kind_of(Hash)).and_return(nil)
-      expect(launcher).to receive(:do_launch).and_return(instances)
-      launcher.send(:launch, launch_options)
+      launched_instances = launcher.send(:launch, launch_options)
+      expect(launched_instances.map(&:public_ip_address)).to all(be_truthy)
     end
   end
 
-  describe '#set_classic_link' do
-    let(:ec2) { instance_double(AWS::EC2) }
-    let(:client) { double(AWS::EC2::Client) }
-    let(:response) { instance_double(AWS::Core::Response) }
+  describe '#kill' do
+    let(:ec2) do
+      ec2 = Aws::EC2::Client.new
+      ec2.stub_responses(
+        :terminate_instances, -> (context) {
+        instance_ids = context.params[:instance_ids]
+        if instance_ids.include? 'i-3'
+          Aws::EC2::Errors::InvalidInstanceIDNotFound.new(nil, "The instance ID 'i-3' do not exist")
+        else
+          {} # success
+        end
+      })
+      ec2
+    end
+
+    let(:instance_ids) { ('i-1'..'i-4').to_a }
+
     before do
       allow(launcher).to receive(:ec2).and_return(ec2)
-      allow(ec2).to receive(:client).and_return(client)
-      allow(response).to receive(:error).and_return(nil)
     end
 
-    let(:classic_link) {
-      {
-        'vpc_id' => 'vpc-1',
-        'security_group_ids' => ['sg-1', 'sg-2'],
-        'security_groups' => ['sg_name']
-      }
-    }
-
-    it 'invokes classic link on all of the instances' do
-      expect(launcher).to receive(:get_vpc_security_group_ids).with('vpc-1', ['sg_name']).
-        and_call_original
-      expect_any_instance_of(AWS::EC2::VPC).to receive(:security_groups).
-        and_return([MockSecurityGroup.new('sg-3', 'sg_name', 'vpc-1')])
-      instances.each do |instance|
-        expect(client).to receive(:attach_classic_link_vpc).ordered.with(a_hash_including(
-            :instance_id => instance.id,
-            :vpc_id => classic_link['vpc_id'],
-            :groups => ['sg-1', 'sg-2', 'sg-3'],
-          )).and_return(response)
+    context 'when ignore_not_found is true' do
+      it 'terminates valid instances even if an invalid instance id is provided' do
+        launcher.kill(instance_ids, ignore_not_found: true)
       end
 
-      launcher.send(:set_classic_link, instances, classic_link)
-    end
-  end
-
-  describe '#run_batch_operation' do
-    it "raises no exception when no internal error occur" do
-      errors = launcher.send(:run_batch_operation, instances) {}
-      expect(errors.all?(&:nil?)).to be true
-    end
-
-    it "runs full batch even when there are two error" do
-      errors = launcher.send(:run_batch_operation,
-                             instances) do |instance, error|
-        raise "error-#{instance.id}" if instance.id % 2 == 0
+      it 'finishes without error even if no instance ids are valid' do
+        launcher.kill(['i-3'], ignore_not_found: true)
       end
-      expect(errors.count(&:nil?)).to be_eql(2)
-      expect(errors.reject(&:nil?).map { |e| e.message }).to \
-        be_eql([2, 4].map { |id| "error-#{id}" })
     end
 
-    it "retries after an intermittent error" do
-      count = 0
-      errors = launcher.send(:run_batch_operation,
-                             instances)  do |instance|
-        if instance.id == 3
-          count += 1
-          count < 3 ?
-            AWS::EC2::Errors::InvalidInstanceID::NotFound.new("error-#{instance.id}"):
-            nil
-        end
+    context 'when ignore_not_found is false' do
+      it 'raises an error' do
+        expect { launcher.kill(instance_ids) }.to raise_error(Aws::EC2::Errors::InvalidInstanceIDNotFound)
       end
-      expect(errors.all?(&:nil?)).to be true
-    end
-
-    it "retries up to max_attempts option per instance" do
-      max_attempts = 6
-      opts = {'region' => 'region', 'max_attempts' => max_attempts}
-      launcher = Stemcell::Launcher.new(opts)
-      allow(launcher).to receive(:sleep).and_return(0)
-      tags = double("Tags")
-      instances = (1..2).map do |id|
-        inst = MockInstance.new(id)
-        allow(inst).to receive(:tags).and_return(tags)
-        inst
-      end
-      expect(tags).to receive(:set).with({'a' => 'b'}).exactly(12).times.
-        and_raise(AWS::EC2::Errors::InvalidInstanceID::NotFound.new("error"))
-      expect do
-        launcher.send(:set_tags, instances, {'a' => 'b'})
-      end.to raise_error(Stemcell::IncompleteOperation)
     end
   end
 
   describe '#configure_aws_creds_and_region' do
-    it 'AWS region is configured after launcher is instanciated' do
-      expect(AWS.config.region).to be_eql('region')
+    it 'AWS region is configured after launcher is instantiated' do
+      expect(Aws.config[:region]).to be_eql('region')
     end
 
     it 'AWS region configuration changed' do
       mock_launcher = Stemcell::Launcher.new('region' => 'ap-northeast-1')
-      expect(AWS.config.region).to be_eql('ap-northeast-1')
+      expect(Aws.config[:region]).to be_eql('ap-northeast-1')
     end
   end
 
   describe '#ec2' do
+
     it 'can return a client with regional endpoint' do
-      launcher = Stemcell::Launcher.new({'region' => 'region1', 'ec2_endpoint' => nil})
+      launcher = Stemcell::Launcher.new({'region' => 'us-east-1', 'ec2_endpoint' => nil})
       client = launcher.send(:ec2)
-      expect(client.config.ec2_endpoint).to be_eql('ec2.region1.amazonaws.com')
+      expect(client.config[:endpoint].to_s).to be_eql('https://ec2.us-east-1.amazonaws.com')
     end
 
     it 'can return a client with custom endpoint' do
-      launcher = Stemcell::Launcher.new({'region' => 'region1', 'ec2_endpoint' => 'endpoint1'})
+      launcher = Stemcell::Launcher.new({
+        'region' => 'region1',
+        'ec2_endpoint' => 'https://endpoint1',
+      })
       client = launcher.send(:ec2)
-      expect(client.config.ec2_endpoint).to be_eql('endpoint1')
+      expect(client.config[:endpoint].to_s).to be_eql('https://endpoint1')
     end
   end
 end

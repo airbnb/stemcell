@@ -1,3 +1,8 @@
+# 0.13.0
+- Migrate to AWS SDK to v3
+- Drop support for ClassicLink
+- Removed `necrosis` script
+
 # 0.12.2
 - Support for using a custom EC2 endpoint
 

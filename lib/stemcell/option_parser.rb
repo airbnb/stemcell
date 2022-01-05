@@ -189,7 +189,7 @@ module Stemcell
       },
       {
         :name => 'cpu_options',
-        :desc => "cpu options",
+        :desc => "comma-separated list of cpu option key=value pairs",
         :type => String,
         :env => 'CPU_OPTIONS'
       },

@@ -71,7 +71,8 @@ describe Stemcell::Launcher do
         'count'                   => 2,
         'security_groups'         => ['sg_name1', 'sg_name2'],
         'user'                    => 'some_user',
-        'wait'                    => true
+        'wait'                    => true,
+        'cpu_options'             => 'core_count=1,threads_per_core=1'
       }
     }
 
@@ -107,7 +108,8 @@ describe Stemcell::Launcher do
                 { :key => "stemcell",   :value => Stemcell::VERSION },
               ]},
           ],
-          :user_data          => Base64.encode64('template')
+          :user_data          => Base64.encode64('template'),
+          :cpu_options        => 'core_count=1,threads_per_core=1'
         )).and_return(instances)
       launched_instances = launcher.send(:launch, launch_options)
       expect(launched_instances.map(&:public_ip_address)).to all(be_truthy)

@@ -31,6 +31,7 @@ module Stemcell
       'chef_environment',
       'chef_data_bag_secret',
       'chef_data_bag_secret_path',
+      'cpu_options',
       'git_branch',
       'git_key',
       'git_origin',
@@ -176,6 +177,11 @@ module Stemcell
       # specify raw block device mappings (optional)
       if opts['block_device_mappings']
         launch_options[:block_device_mappings] = opts['block_device_mappings']
+      end
+
+      # specify cpu options (optional)
+      if opts['cpu_options']
+        launch_options[:cpu_options] = opts['cpu_options']
       end
 
       # specify ephemeral block device mappings (optional)

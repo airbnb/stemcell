@@ -114,6 +114,19 @@ describe Stemcell::Launcher do
       launched_instances = launcher.send(:launch, launch_options)
       expect(launched_instances.map(&:public_ip_address)).to all(be_truthy)
     end
+
+    it 'launches with min/max count' do
+      expect(launcher).to receive(:do_launch).with(a_hash_including(
+        :min_count => 3,
+        :max_count => 6,
+      )).and_return(instances)
+      options = launch_options.merge(
+        'min_count' => 3,
+        'max_count' => 6,
+      )
+      launched_instances = launcher.send(:launch,
+        launch_options.merge('min_count' => 3, 'max_count' => 6))
+    end
   end
 
   describe '#kill' do

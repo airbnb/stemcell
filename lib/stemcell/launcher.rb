@@ -47,6 +47,8 @@ module Stemcell
       'dedicated_tenancy',
       'associate_public_ip_address',
       'count',
+      'min_count',
+      'max_count',
       'security_groups',
       'security_group_ids',
       'tags',
@@ -102,15 +104,18 @@ module Stemcell
       tags['Name'] = opts['chef_role'] if opts['chef_environment'] == 'production'
       tags.merge!(opts['tags']) if opts['tags']
 
+      #  Min/max number of instances to launch
+      min_count = opts['min_count'] || opts['count']
+      max_count = opts['max_count'] || opts['count']
+
       # generate launch options
       launch_options = {
         :image_id => opts['image_id'],
         :instance_type => opts['instance_type'],
         :key_name => opts['key_name'],
-        :min_count => opts['count'],
-        :max_count => opts['count'],
+        :min_count => min_count,
+        :max_count => max_count,
       }
-
 
       # Associate Public IP can only bet set on network_interfaces, and if present
       # security groups and subnet should be set on the interface. VPC-only.

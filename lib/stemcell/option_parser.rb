@@ -260,6 +260,18 @@ module Stemcell
         :env   => 'COUNT'
       },
       {
+        :name  => 'min_count',
+        :desc  => "minimum number of instances to launch",
+        :type  => Integer,
+        :env   => 'MIN_COUNT'
+      },
+      {
+        :name  => 'max_count',
+        :desc  => "maximum number of instances to launch",
+        :type  => Integer,
+        :env   => 'MAX_COUNT'
+      },
+      {
         :name  => 'tail',
         :desc  => "interactively tail the initial converge",
         :type  => nil,

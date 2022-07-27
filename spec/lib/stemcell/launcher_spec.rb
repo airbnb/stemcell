@@ -25,7 +25,7 @@ describe Stemcell::Launcher do
 
   describe '#render_template' do
 
-    context 'when launch_template_path is not provided' do
+    context 'when bootstrap_template_path is not provided' do
       let(:subject) do
         launcher.render_template()
       end
@@ -43,13 +43,13 @@ describe Stemcell::Launcher do
       end
     end
 
-    context 'when launch_template_path is provided' do
+    context 'when bootstrap_template_path is provided' do
       let(:subject) do
         launcher.render_template()
       end
 
       let(:launcher) do
-        opts = {'region' => 'region', 'vpc_id' => 'vpc-1', 'launch_template_path' => '/path/to/file.sh.erb'}
+        opts = {'region' => 'region', 'vpc_id' => 'vpc-1', 'bootstrap_template_path' => '/path/to/file.sh.erb'}
         launcher = Stemcell::Launcher.new(opts)
 
         launcher

@@ -23,6 +23,51 @@ describe Stemcell::Launcher do
   end
   let(:instance_ids) { instances.map(&:id) }
 
+  describe '#render_template' do
+
+    context 'when launch_template_path is not provided' do
+      let(:subject) do
+        launcher.render_template()
+      end
+
+      before do
+        allow(File).to receive(:expand_path).and_return('/path/to/default/bootstrap.sh.erb')
+        allow(File).to receive(:read).and_return('default template content')
+      end
+
+      it 'launches the default template' do
+        expect(File).to receive(:expand_path)
+        expect(File).to receive(:read).with('/path/to/default/bootstrap.sh.erb')
+
+        expect(subject).not_to be_empty
+      end
+    end
+
+    context 'when launch_template_path is provided' do
+      let(:subject) do
+        launcher.render_template()
+      end
+
+      let(:launcher) do
+        opts = {'region' => 'region', 'vpc_id' => 'vpc-1', 'launch_template_path' => '/path/to/file.sh.erb'}
+        launcher = Stemcell::Launcher.new(opts)
+
+        launcher
+      end
+
+      before do
+        allow(File).to receive(:read).and_return('custom template content')
+      end
+
+      it 'launches the override template' do
+        expect(File).not_to receive(:expand_path)
+        expect(File).to receive(:read).with('/path/to/file.sh.erb')
+
+        expect(subject).not_to be_empty
+      end
+    end
+  end
+
   describe '#launch' do
     let(:ec2) do
       ec2 = Aws::EC2::Client.new

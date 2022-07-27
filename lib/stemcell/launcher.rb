@@ -83,6 +83,7 @@ module Stemcell
       @aws_secret_key = opts['aws_secret_key']
       @aws_session_token = opts['aws_session_token']
       @max_attempts = opts['max_attempts'] || 3
+      @bootstrap_template_path = opts['bootstrap_template_path']
       configure_aws_creds_and_region
     end
 
@@ -257,7 +258,7 @@ module Stemcell
 
     # this is made public for ec2admin usage
     def render_template(opts={})
-      template_file_path = File.expand_path(TEMPLATE_PATH, __FILE__)
+      template_file_path = @bootstrap_template_path || File.expand_path(TEMPLATE_PATH, __FILE__)
       template_file = File.read(template_file_path)
       erb_template = ERB.new(template_file)
       last_bootstrap_line = LAST_BOOTSTRAP_LINE

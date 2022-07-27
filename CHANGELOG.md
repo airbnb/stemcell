@@ -1,4 +1,7 @@
-# 0.13.1
+# 0.14.0
+- Adds support for specifying a custom bootstrap template file
+
+# 0.13.2
 - Support for specifying --min-count and --max-count
 
 # 0.13.1

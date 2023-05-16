@@ -18,25 +18,22 @@ Gem::Specification.new do |s|
   s.require_paths = ["lib"]
 
   # pins several aws sdk transitive dependencies to maintain compatibility with Ruby < 2.3
+  s.add_runtime_dependency 'aws-sdk-core',    '~> 3.130.2'
   s.add_runtime_dependency 'aws-eventstream', '~> 1.1.1'
   s.add_runtime_dependency 'aws-sdk-ec2',     '~> 1'
   s.add_runtime_dependency 'aws-sigv4',       '~> 1.2.4'
-  s.add_runtime_dependency 'net-ssh',         '~> 2.9'
+  s.add_runtime_dependency 'net-ssh',         '~> 7.1'
   if RUBY_VERSION >= '2.0'
     s.add_runtime_dependency 'chef',     '>= 11.4.0'
   else
     s.add_runtime_dependency 'chef',     ['>= 11.4.0', '< 12.0.0']
   end
 
-  # this is a transitive dependency, but the latest vesion has a late ruby
-  # version dependency. lets explicitly include it here. if this becomes
-  # no-longer a dependency of chef via chef-zero, then remove it
-  s.add_runtime_dependency 'rack', '< 2.0.0'
   s.add_runtime_dependency 'nokogiri', '~> 1.8.2'
   s.add_runtime_dependency 'ffi-yajl', '< 2.3.1'
 
   s.add_runtime_dependency 'trollop',    '~> 2.1'
   s.add_runtime_dependency 'aws-creds',  '~> 0.2.3'
   s.add_runtime_dependency 'colored',    '~> 1.2'
-  s.add_runtime_dependency 'json',       '~> 1.8.2'
+  s.add_runtime_dependency 'json',       '>= 1.8.2'
 end

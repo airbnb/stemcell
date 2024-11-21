@@ -1,3 +1,6 @@
+# 0.15.0
+- Upgrade Chef to 18 and Nokogiri to 1.16 for compatibility with newer Ruby versions
+
 # 0.14.0
 - Adds support for specifying a custom bootstrap template file
 

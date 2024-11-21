@@ -116,7 +116,7 @@ describe Stemcell::MetadataSource::ChefRepository do
         let(:role) { 'unit-simple-none' }
         let(:cookbook_attributes) { ['unknown::attr'] }
         it "raises an error" do
-          expect { result_metadata }.to raise_error(Chef::Exceptions::CookbookNotFound)
+          expect { result_metadata }.to raise_error(Chef::Exceptions::CookbookNotFoundInRepo)
         end
       end
 

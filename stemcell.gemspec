@@ -26,10 +26,10 @@ Gem::Specification.new do |s|
   if RUBY_VERSION >= '2.0'
     s.add_runtime_dependency 'chef',     '>= 11.4.0'
   else
-    s.add_runtime_dependency 'chef',     ['>= 11.4.0', '< 12.0.0']
+    s.add_runtime_dependency 'chef',     ['>= 11.4.0', '< 19.0.0']
   end
 
-  s.add_runtime_dependency 'nokogiri', '~> 1.8.2'
+  s.add_runtime_dependency 'nokogiri', '~> 1.16.0'
   s.add_runtime_dependency 'ffi-yajl', '< 2.3.1'
 
   s.add_runtime_dependency 'trollop',    '~> 2.1'

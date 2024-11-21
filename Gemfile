@@ -9,4 +9,4 @@ group :test do
   gem 'rake', '~> 10.3.2'
 end
 
-gem 'nokogiri', '~> 1.8.2'
+gem 'nokogiri', '~> 1.16.0'
